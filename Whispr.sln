@@ -1,0 +1,38 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35013.160
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Whispr", "Whispr\Whispr.csproj", "{54ABCE90-5EBB-41A1-92DB-125CF270F03E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Whispr.Desktop", "Whispr.Desktop\Whispr.Desktop.csproj", "{CD21100F-2E0E-4364-B868-6499D3055615}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Whispr.Tests", "Whispr.Tests\Whispr.Tests.csproj", "{1B93424A-6990-4084-AE4C-9C4D73C42062}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Whispr.Python", "Whispr.Python", "{CA118A6A-B674-496A-B1E4-A329E43DCF2A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{54ABCE90-5EBB-41A1-92DB-125CF270F03E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54ABCE90-5EBB-41A1-92DB-125CF270F03E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54ABCE90-5EBB-41A1-92DB-125CF270F03E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54ABCE90-5EBB-41A1-92DB-125CF270F03E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD21100F-2E0E-4364-B868-6499D3055615}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD21100F-2E0E-4364-B868-6499D3055615}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD21100F-2E0E-4364-B868-6499D3055615}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD21100F-2E0E-4364-B868-6499D3055615}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {831845A0-FF9A-4070-94A0-D33D8368223D}
+	EndGlobalSection
+EndGlobal
