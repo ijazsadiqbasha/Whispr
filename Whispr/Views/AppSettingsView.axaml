@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Whispr.ViewModels"
+             x:Class="Whispr.Views.AppSettingsView"
+             x:DataType="vm:AppSettingsViewModel">
+    <StackPanel>
+        <TextBlock Text="Shortcut Key" Margin="0,0,0,5"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+            <TextBlock Text="CTRL + SHIFT + " VerticalAlignment="Center"/>
+            <ComboBox ItemsSource="{Binding ShortcutKeys}" SelectedItem="{Binding SelectedShortcutKey}" Margin="5,0,0,0"/>
+        </StackPanel>
+        
+        <TextBlock Text="AI Model" Margin="0,15,0,5"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+            <ComboBox ItemsSource="{Binding AIModels}" SelectedItem="{Binding SelectedAIModel}" Margin="0,0,5,0"/>
+            <Button Content="Download" Command="{Binding DownloadModelCommand}" Margin="0,0,5,0"/>
+            <Button Content="Load" Command="{Binding LoadModelCommand}"/>
+        </StackPanel>
+        <TextBlock Text="{Binding ModelStatusText}" Margin="0,5,0,0"/>
+        <ProgressBar IsVisible="{Binding IsModelProgressVisible}" Margin="0,5,0,0"/>
+    </StackPanel>
+</UserControl>

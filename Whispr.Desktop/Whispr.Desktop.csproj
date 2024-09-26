@@ -1,15 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
+    <Nullable>enable</Nullable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
   <ItemGroup>
-    <Using Include="NUnit.Framework" />
+    <ProjectReference Include="..\Whispr\Whispr.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Whispr\Whispr.csproj" />
+    <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 </Project>
