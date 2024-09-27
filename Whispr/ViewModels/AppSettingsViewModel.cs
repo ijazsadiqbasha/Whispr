@@ -44,8 +44,8 @@ namespace Whispr.ViewModels
 
         public AppSettingsViewModel()
         {
-            ShortcutKeys = new ObservableCollection<string> { "Space", "Enter", "Tab" };
-            AIModels = new ObservableCollection<string> { "Model1", "Model2", "Model3" };
+            ShortcutKeys = ["Space", "Enter", "Tab"];
+            AIModels = ["Model1", "Model2", "Model3"];
 
             DownloadModelCommand = ReactiveCommand.CreateFromTask(DownloadModel);
             LoadModelCommand = ReactiveCommand.CreateFromTask(LoadModel);

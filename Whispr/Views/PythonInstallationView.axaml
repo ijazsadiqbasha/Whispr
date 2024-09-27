@@ -1,14 +1,25 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:Whispr.ViewModels"
+             mc:Ignorable="d"
              x:Class="Whispr.Views.PythonInstallationView"
              x:DataType="vm:PythonInstallationViewModel">
-    <StackPanel>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-            <Button Content="Download" Command="{Binding DownloadPythonCommand}" Margin="0,0,5,0"/>
-            <Button Content="Verify" Command="{Binding VerifyPythonCommand}"/>
+    <StackPanel Spacing="10">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Content="Download and Install Python" 
+                    Command="{Binding DownloadPythonCommand}"
+                    IsEnabled="{Binding IsDownloadEnabled}"/>
+            <Button Content="Verify Python Installation" 
+                    Command="{Binding VerifyPythonCommand}"
+                    IsEnabled="{Binding IsVerifyEnabled}"/>
         </StackPanel>
         <TextBlock Text="{Binding PythonStatusText}" Margin="0,5,0,0"/>
-        <ProgressBar IsVisible="{Binding IsPythonProgressVisible}" Margin="0,5,0,0"/>
+        <ProgressBar IsVisible="{Binding IsPythonProgressVisible}" 
+                     Value="{Binding ProgressValue}" 
+                     Minimum="0" 
+                     Maximum="1" 
+                     Height="20"/>
     </StackPanel>
 </UserControl>

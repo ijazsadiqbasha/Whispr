@@ -1,4 +1,5 @@
 using ReactiveUI;
+using Whispr.Services;
 
 namespace Whispr.ViewModels
 {
@@ -7,9 +8,9 @@ namespace Whispr.ViewModels
         public PythonInstallationViewModel PythonInstallationViewModel { get; }
         public AppSettingsViewModel AppSettingsViewModel { get; }
 
-        public SettingsViewModel()
+        public SettingsViewModel(IPythonInstallationService pythonInstallationService)
         {
-            PythonInstallationViewModel = new PythonInstallationViewModel();
+            PythonInstallationViewModel = new PythonInstallationViewModel(pythonInstallationService);
             AppSettingsViewModel = new AppSettingsViewModel();
         }
     }

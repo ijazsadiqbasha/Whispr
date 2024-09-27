@@ -7,6 +7,11 @@ namespace Whispr.Views
     {
         public PythonInstallationView()
         {
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
             AvaloniaXamlLoader.Load(this);
         }
     }
