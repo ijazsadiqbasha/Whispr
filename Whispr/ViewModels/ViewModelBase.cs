@@ -3,9 +3,9 @@ using Whispr.Models;
 
 namespace Whispr.ViewModels
 {
-    public class ViewModelBase : ReactiveObject
+    public class ViewModelBase(AppSettings settings) : ReactiveObject
     {
-        protected static AppSettings Settings { get; } = AppSettings.Load();
+        protected readonly AppSettings Settings = settings;
 
         protected void SaveSettings()
         {

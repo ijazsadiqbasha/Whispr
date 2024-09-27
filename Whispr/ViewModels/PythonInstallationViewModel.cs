@@ -2,6 +2,7 @@ using ReactiveUI;
 using System;
 using System.Reactive;
 using System.Threading.Tasks;
+using Whispr.Models;
 using Whispr.Services;
 
 namespace Whispr.ViewModels
@@ -49,7 +50,8 @@ namespace Whispr.ViewModels
         public ReactiveCommand<Unit, Unit> DownloadPythonCommand { get; }
         public ReactiveCommand<Unit, Unit> VerifyPythonCommand { get; }
 
-        public PythonInstallationViewModel(IPythonInstallationService pythonInstallationService)
+        public PythonInstallationViewModel(IPythonInstallationService pythonInstallationService, AppSettings settings)
+            : base(settings)
         {
             _pythonInstallationService = pythonInstallationService;
             DownloadPythonCommand = ReactiveCommand.CreateFromTask(DownloadPython);

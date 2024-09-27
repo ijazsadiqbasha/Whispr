@@ -1,3 +1,5 @@
+using NUnit.Framework;
+
 namespace Whispr.Tests
 {
     public class Tests

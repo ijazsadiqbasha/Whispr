@@ -1,11 +1,11 @@
 using System;
+using Avalonia.Controls;
 
-namespace Whispr.Services
+namespace Whispr.Services.Interfaces
 {
-    public interface IHotkeyService
+    public interface IHotkeyService : IDisposable
     {
-        void RegisterHotkey(string hotkeyName, Action action);
-        void UnregisterHotkey(string hotkeyName);
-        bool IsHotkeyRegistered(string hotkeyName);
+        void Initialize(Window window, Action hotkeyAction);
+        void ChangeKey(int key);
     }
 }

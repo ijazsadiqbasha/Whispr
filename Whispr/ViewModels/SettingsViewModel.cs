@@ -1,17 +1,17 @@
 using ReactiveUI;
+using System.Reactive;
+using Whispr.Models;
 using Whispr.Services;
+using Whispr.Services.Interfaces;
 
 namespace Whispr.ViewModels
 {
-    public class SettingsViewModel : ViewModelBase
+    public class SettingsViewModel(
+        PythonInstallationViewModel pythonInstallationViewModel,
+        AppSettingsViewModel appSettingsViewModel,
+        AppSettings settings) : ViewModelBase(settings)
     {
-        public PythonInstallationViewModel PythonInstallationViewModel { get; }
-        public AppSettingsViewModel AppSettingsViewModel { get; }
-
-        public SettingsViewModel(IPythonInstallationService pythonInstallationService)
-        {
-            PythonInstallationViewModel = new PythonInstallationViewModel(pythonInstallationService);
-            AppSettingsViewModel = new AppSettingsViewModel();
-        }
+        public PythonInstallationViewModel PythonInstallationViewModel { get; } = pythonInstallationViewModel;
+        public AppSettingsViewModel AppSettingsViewModel { get; } = appSettingsViewModel;
     }
 }
