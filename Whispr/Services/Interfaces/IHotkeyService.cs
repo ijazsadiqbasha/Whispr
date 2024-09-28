@@ -1,11 +1,15 @@
-using System;
-using Avalonia.Controls;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace Whispr.Services.Interfaces
+namespace Whispr.Services
 {
-    public interface IHotkeyService : IDisposable
+    public interface IHotkeyService
     {
-        void Initialize(Window window, Action hotkeyAction);
-        void ChangeKey(int key);
+        bool ChangeKey(int key);
+
+        event EventHandler HotkeyTriggered;
     }
 }

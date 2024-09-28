@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.Configuration;
@@ -7,14 +8,19 @@ using System;
 using System.Diagnostics;
 using Whispr.Models;
 using Whispr.Services;
-using Whispr.Services.Interfaces;
 using Whispr.ViewModels;
 using Whispr.Views;
+using SharpHook;
+using Avalonia.Metadata;
+using SharpHook.Native;
+
 
 namespace Whispr
 {
-    public partial class App : Application
+    public partial class App : Application, IDisposable
     {
+        private TrayIcon? _trayIcon;
+        private Settings? _settings;
         private IHotkeyService? _hotkeyService;
 
         public override void Initialize()
@@ -28,30 +34,25 @@ namespace Whispr
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                _hotkeyService = services.GetRequiredService<IHotkeyService>();
-                var mainWindow = new Settings
+                SetupTrayIcon(desktop);
+
+                _settings = new Settings
                 {
                     DataContext = services.GetRequiredService<SettingsViewModel>()
                 };
-                desktop.MainWindow = mainWindow;
 
-                try
-                {
-                    _hotkeyService.Initialize(mainWindow, OnHotkeyPressed);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Failed to initialize hotkey service: {ex.Message}");
-                    // Optionally, show an error message to the user
-                }
+                _hotkeyService = services.GetRequiredService<IHotkeyService>();
+                _hotkeyService.HotkeyTriggered += OnHotkeyTriggered;
             }
 
             base.OnFrameworkInitializationCompleted();
         }
 
-        private void OnHotkeyPressed()
+        private void OnHotkeyTriggered(object? sender, EventArgs e)
         {
-            Debug.WriteLine("Hotkey pressed!");
+            // Handle hotkey trigger here
+            Debug.WriteLine("Hotkey triggered!");
+            // You can show your main window or perform any other action here
         }
 
         private static ServiceProvider ConfigureServices()
@@ -64,15 +65,57 @@ namespace Whispr
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
 
+            var appSettings = AppSettings.LoadOrCreate();
+
             services.AddSingleton<IConfiguration>(configuration);
-            services.AddSingleton<IHotkeyService>(sp => HotkeyServiceFactory.Create(sp.GetRequiredService<IConfiguration>()));
+            services.AddSingleton<IHotkeyService, HotkeyService>();
             services.AddSingleton<IPythonInstallationService, PythonInstallationService>();
-            services.AddSingleton(AppSettings.LoadOrCreate());
+            services.AddSingleton(appSettings);
             services.AddTransient<PythonInstallationViewModel>();
-            services.AddTransient<AppSettingsViewModel>();
+            services.AddTransient<AppSettingsViewModel>(sp =>
+                new AppSettingsViewModel(sp.GetRequiredService<AppSettings>(), sp.GetRequiredService<IHotkeyService>()));
             services.AddTransient<SettingsViewModel>();
 
             return services.BuildServiceProvider();
+        }
+
+        private void SetupTrayIcon(IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            _trayIcon = new TrayIcon
+            {
+                //Icon = new WindowIcon("/Assets/avalonia-logo.ico"),
+                ToolTipText = "SimpleDictation"
+            };
+
+            var openSettings = new NativeMenuItem("Open Settings");
+            openSettings.Click += (sender, e) => ShowSettingsWindow();
+
+            var quit = new NativeMenuItem("Quit");
+            quit.Click += (sender, e) =>
+            {
+                Dispose();
+                desktop.Shutdown();
+                Environment.Exit(0);
+            };
+
+            _trayIcon.Menu = new NativeMenu
+            {
+                Items = { openSettings, quit }
+            };
+            _trayIcon.IsVisible = true;
+        }
+
+        private void ShowSettingsWindow()
+        {
+            _settings?.Show();
+        }
+
+        public void Dispose()
+        {
+            Debug.WriteLine("Disposing App resources");
+            GC.SuppressFinalize(this);
+
+            _trayIcon?.Dispose();
         }
     }
 }

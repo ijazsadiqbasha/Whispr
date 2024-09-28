@@ -2,7 +2,6 @@ using ReactiveUI;
 using System.Reactive;
 using Whispr.Models;
 using Whispr.Services;
-using Whispr.Services.Interfaces;
 
 namespace Whispr.ViewModels
 {

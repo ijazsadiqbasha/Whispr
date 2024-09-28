@@ -65,7 +65,7 @@ namespace Whispr.ViewModels
             {
                 PythonStatusText = "Python is installed and verified.";
                 IsDownloadEnabled = false;
-                IsVerifyEnabled = false;
+                IsVerifyEnabled = true;
             }
         }
 

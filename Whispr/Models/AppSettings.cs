@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.IO;
+using System.Diagnostics;
+using System;
 
 namespace Whispr.Models
 {
@@ -12,26 +14,36 @@ namespace Whispr.Models
         private const string SettingsFileName = "localsettings.json";
         private static readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
 
-        public AppSettings()
-        {
-            // Don't call Load() in the constructor
-        }
-
         public static AppSettings LoadOrCreate()
         {
             if (File.Exists(SettingsFileName))
             {
-                string json = File.ReadAllText(SettingsFileName);
-                var loadedSettings = JsonSerializer.Deserialize<AppSettings>(json, _jsonOptions);
-                return loadedSettings ?? new AppSettings();
+                try
+                {
+                    string json = File.ReadAllText(SettingsFileName);
+                    var loadedSettings = JsonSerializer.Deserialize<AppSettings>(json, _jsonOptions);
+                    return loadedSettings ?? new AppSettings();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error loading settings: {ex.Message}");
+                    return new AppSettings();
+                }
             }
             return new AppSettings();
         }
 
         public void Save()
         {
-            string json = JsonSerializer.Serialize(this, _jsonOptions);
-            File.WriteAllText(SettingsFileName, json);
+            try
+            {
+                string json = JsonSerializer.Serialize(this, _jsonOptions);
+                File.WriteAllText(SettingsFileName, json);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error saving settings: {ex.Message}");
+            }
         }
     }
 }
