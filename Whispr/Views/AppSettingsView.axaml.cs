@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Whispr.ViewModels;
 
 namespace Whispr.Views
 {

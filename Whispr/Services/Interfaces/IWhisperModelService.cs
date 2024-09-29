@@ -4,9 +4,8 @@ namespace Whispr.Services
 {
     public interface IWhisperModelService
     {
-        Task LoadModelAsync(string modelPath);
-        Task UnloadModelAsync();
-        Task<string> PerformInferenceAsync(byte[] audioData);
-        bool IsModelLoaded { get; }
+        Task DownloadAndConvertModelAsync(string modelName);
+        Task LoadModelAsync(string modelName);
+        Task<string> TranscribeAsync(byte[] audioData);
     }
 }

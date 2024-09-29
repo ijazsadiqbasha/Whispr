@@ -14,12 +14,24 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Remove="Assets\voice_to_text.py" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\voice_to_text.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.1.0" />
     <PackageReference Include="Avalonia.Desktop" Version="11.1.0" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.0" />
     <PackageReference Include="Avalonia.ReactiveUI" Version="11.1.0" />
     <PackageReference Include="Avalonia.Diagnostics" Version="11.1.0" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.0" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="pythonnet" Version="3.0.4" />
     <PackageReference Include="ReactiveUI" Version="19.5.1" />
     <PackageReference Include="ReactiveUI.Fody" Version="19.5.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
@@ -27,6 +39,12 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
     <PackageReference Include="SharpHook" Version="5.3.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\MicrophoneOverlay.axaml.cs">
+      <DependentUpon>MicrophoneOverlay.axaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>

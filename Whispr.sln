@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Whispr", "Whispr\Whispr.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Whispr.Tests", "Whispr.Tests\Whispr.Tests.csproj", "{1B93424A-6990-4084-AE4C-9C4D73C42062}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Whispr.Python", "Whispr.Python", "{CA118A6A-B674-496A-B1E4-A329E43DCF2A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

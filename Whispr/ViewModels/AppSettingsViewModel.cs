@@ -1,7 +1,10 @@
+using Python.Runtime;
 using ReactiveUI;
+using SharpHook.Native;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Reactive;
 using System.Threading.Tasks;
 using Whispr.Models;
@@ -14,6 +17,7 @@ namespace Whispr.ViewModels
 
         private string _modelStatusText = string.Empty;
         private bool _isModelProgressVisible = false;
+        private double _modelProgress = 0;
         private string _selectedShortcutKey = string.Empty;
         private string _selectedAIModel = string.Empty;
 
@@ -23,10 +27,21 @@ namespace Whispr.ViewModels
             set => this.RaiseAndSetIfChanged(ref _modelStatusText, value);
         }
 
+        public bool IsDownloadButtonEnabled
+        {
+            get => !IsModelDownloaded(SelectedAIModel);
+        }
+
         public bool IsModelProgressVisible
         {
             get => _isModelProgressVisible;
             set => this.RaiseAndSetIfChanged(ref _isModelProgressVisible, value);
+        }
+
+        public double ModelProgressValue
+        {
+            get => _modelProgress;
+            set => this.RaiseAndSetIfChanged(ref _modelProgress, value);
         }
 
         public string SelectedShortcutKey
@@ -42,7 +57,11 @@ namespace Whispr.ViewModels
         public string SelectedAIModel
         {
             get => _selectedAIModel;
-            set => this.RaiseAndSetIfChanged(ref _selectedAIModel, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _selectedAIModel, value);
+                ChangeAIModel();
+            }
         }
 
         public ObservableCollection<string> ShortcutKeys { get; set; }
@@ -52,14 +71,18 @@ namespace Whispr.ViewModels
         public ReactiveCommand<Unit, Unit> LoadModelCommand { get; }
 
         private readonly IHotkeyService _hotkeyService;
+        private readonly IWhisperModelService _whisperModelService;
 
-        public AppSettingsViewModel(AppSettings settings, IHotkeyService hotkeyService)
+        private AppSettings _appSettings;
+
+        public AppSettingsViewModel(AppSettings settings, IHotkeyService hotkeyService, IWhisperModelService whisperModelService)
             : base(settings)
         {
+            _appSettings = settings;
             _hotkeyService = hotkeyService;
+            _whisperModelService = whisperModelService;
 
-            ShortcutKeys = new ObservableCollection<string>
-            {
+            ShortcutKeys = [
                 "Space", "Tab",
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
                 "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
@@ -67,38 +90,84 @@ namespace Whispr.ViewModels
                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
                 "NumPad0", "NumPad1", "NumPad2", "NumPad3", "NumPad4", "NumPad5", "NumPad6", "NumPad7", "NumPad8", "NumPad9",
                 "Esc", "Insert", "Delete", "Home", "End", "PageUp", "PageDown"
-            };
-            AIModels = new ObservableCollection<string> { "Model1", "Model2", "Model3" };
+            ];
+
+            AIModels = [
+                "openai/whisper-tiny",
+                "openai/whisper-base",
+                "openai/whisper-small",
+                "openai/whisper-medium",
+                "openai/whisper-large",
+                "openai/whisper-large-v2",
+                "distil-whisper/distil-small.en",
+                "distil-whisper/distil-medium.en",
+                "distil-whisper/distil-large-v2"
+            ];
 
             DownloadModelCommand = ReactiveCommand.CreateFromTask(DownloadModel);
+
             LoadModelCommand = ReactiveCommand.CreateFromTask(LoadModel);
 
             // Set initial shortcut key based on settings
             _selectedShortcutKey = ConvertKeyCodeToShortcutKey(Settings.Hotkey);
             Debug.WriteLine($"Initial hotkey loaded from settings: {_selectedShortcutKey} (0x{Settings.Hotkey:X})");
             
-            // Apply the saved hotkey
+            // Set initial AIModel based on settings
+            _selectedAIModel = Settings.AIModel;
+            Debug.WriteLine($"Initial AIModel loaded from settings: {_selectedAIModel}");
+
             ChangeHotkey();
+
+            this.WhenAnyValue(x => x.SelectedAIModel)
+                .Subscribe(_ => this.RaisePropertyChanged(nameof(IsDownloadButtonEnabled)));
+        }
+
+        private bool IsModelDownloaded(string modelName)
+        {
+            string modelPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "whisper_models", modelName.Replace('/', '_'));
+            return Directory.Exists(modelPath);
         }
 
         private async Task DownloadModel()
         {
             IsModelProgressVisible = true;
-            ModelStatusText = "Downloading model...";
-            // Simulate download
-            await Task.Delay(2000);
-            ModelStatusText = "Model downloaded.";
+            ModelProgressValue = 0;
+            ModelStatusText = "Initializing...";
+
+            try
+            {
+                ModelProgressValue = 0.33;
+                ModelStatusText = "Downloading model...";
+                await _whisperModelService.DownloadAndConvertModelAsync(SelectedAIModel);
+
+                ModelProgressValue = 100;
+                ModelStatusText = "Model downloaded and converted successfully";
+            }
+            catch (Exception e)
+            {
+                string errorMessage = $"Error downloading or converting model: {e.Message}";
+                Console.Error.WriteLine(errorMessage);
+                ModelStatusText = errorMessage;
+            }
+
             IsModelProgressVisible = false;
         }
 
         private async Task LoadModel()
         {
-            IsModelProgressVisible = true;
             ModelStatusText = "Loading model...";
-            // Simulate loading
-            await Task.Delay(2000);
-            ModelStatusText = "Model loaded.";
-            IsModelProgressVisible = false;
+
+            try
+            {
+                await _whisperModelService.LoadModelAsync(SelectedAIModel);
+                ModelStatusText = "Model loaded and running.";
+            }
+            catch (Exception e)
+            {
+                string errorMessage = $"Error loading model: {e.Message}";
+                Console.Error.WriteLine(errorMessage);
+                ModelStatusText = errorMessage;
+            }
         }
 
         private void ChangeHotkey()
@@ -129,7 +198,13 @@ namespace Whispr.ViewModels
                 SelectedShortcutKey = ConvertKeyCodeToShortcutKey(Settings.Hotkey);
             }
         }
-    
+
+        private void ChangeAIModel()
+        {
+            Settings.AIModel = SelectedAIModel;
+            SaveSettings();
+            Debug.WriteLine("AI Model changed saved successfully");
+        }
 
         private static int ConvertShortcutKeyToKeyCode(string shortcutKey)
         {

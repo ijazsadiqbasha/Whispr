@@ -1,5 +1,8 @@
+using Python.Runtime;
 using ReactiveUI;
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Reactive;
 using System.Threading.Tasks;
 using Whispr.Models;
@@ -65,7 +68,21 @@ namespace Whispr.ViewModels
             {
                 PythonStatusText = "Python is installed and verified.";
                 IsDownloadEnabled = false;
-                IsVerifyEnabled = true;
+                IsVerifyEnabled = false;
+
+                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string pythonHome = Path.Combine(baseDirectory, "python");
+                string pythonDll = Path.Combine(pythonHome, "python311.dll");
+
+                Debug.WriteLine($"Setting PYTHONNET_PYDLL to: {pythonDll}");
+                Debug.WriteLine($"Setting PYTHONHOME to: {pythonHome}");
+
+                Environment.SetEnvironmentVariable("PYTHONNET_PYDLL", pythonDll);
+                Environment.SetEnvironmentVariable("PYTHONHOME", pythonHome);
+
+                Runtime.PythonDLL = pythonDll;
+                PythonEngine.Initialize();
+                Debug.WriteLine("Python runtime initialized successfully.");
             }
         }
 

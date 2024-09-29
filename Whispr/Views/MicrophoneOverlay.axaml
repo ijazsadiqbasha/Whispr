@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Whispr.ViewModels"
+        xmlns:local="clr-namespace:Whispr.Views"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" Width="60" Height="60"
+        x:Class="Whispr.Views.MicrophoneOverlay"
+        x:DataType="vm:MicrophoneOverlayViewModel"
+        Title="MicrophoneOverlay"
+		SystemDecorations="None"
+        Background="Transparent"
+        WindowStartupLocation="Manual"
+        ShowInTaskbar="False"
+        Topmost="True"
+        CanResize="False">
+    <Grid>
+		<Ellipse x:Name="BackgroundEllipse"
+                 Width="60" Height="60"
+                 Fill="#80000000" />
+		<Grid Width="60" Height="60">
+			<Viewbox Width="40" Height="40" Margin="-7.5,0,0,0">
+				<Path x:Name="MicrophoneIcon"
+                      Fill="White"
+                      Data="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z" />
+			</Viewbox>
+		</Grid>
+	</Grid>
+</Window>

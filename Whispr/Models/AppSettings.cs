@@ -10,6 +10,7 @@ namespace Whispr.Models
         public string PythonPath { get; set; } = string.Empty;
         public bool IsPythonInstalled { get; set; } = false;
         public int Hotkey { get; set; } = 32; // Default to space key
+        public string AIModel { get; set; } = "distil-whisper/distil-small.en";
 
         private const string SettingsFileName = "localsettings.json";
         private static readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };

@@ -2,6 +2,7 @@ using Whispr.Models;
 using SharpHook;
 using SharpHook.Native;
 using System;
+using Avalonia;
 
 namespace Whispr.Services
 {

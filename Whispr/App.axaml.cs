@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +14,9 @@ using Whispr.Views;
 using SharpHook;
 using Avalonia.Metadata;
 using SharpHook.Native;
-
+using Python.Runtime;
+using Avalonia.Platform;
+using Avalonia.Threading;
 
 namespace Whispr
 {
@@ -22,6 +25,7 @@ namespace Whispr
         private TrayIcon? _trayIcon;
         private Settings? _settings;
         private IHotkeyService? _hotkeyService;
+        private MicrophoneOverlay? _microphoneOverlay;
 
         public override void Initialize()
         {
@@ -43,6 +47,11 @@ namespace Whispr
 
                 _hotkeyService = services.GetRequiredService<IHotkeyService>();
                 _hotkeyService.HotkeyTriggered += OnHotkeyTriggered;
+
+                _microphoneOverlay = new MicrophoneOverlay
+                {
+                    DataContext = services.GetRequiredService<MicrophoneOverlayViewModel>()
+                };
             }
 
             base.OnFrameworkInitializationCompleted();
@@ -50,9 +59,23 @@ namespace Whispr
 
         private void OnHotkeyTriggered(object? sender, EventArgs e)
         {
-            // Handle hotkey trigger here
             Debug.WriteLine("Hotkey triggered!");
-            // You can show your main window or perform any other action here
+
+            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
+                {
+                    viewModel.ToggleVisibility();
+                    if (viewModel.IsVisible)
+                    {
+                        _microphoneOverlay.Show();
+                    }
+                    else
+                    {
+                        _microphoneOverlay.Hide();
+                    }
+                }
+            });
         }
 
         private static ServiceProvider ConfigureServices()
@@ -70,11 +93,12 @@ namespace Whispr
             services.AddSingleton<IConfiguration>(configuration);
             services.AddSingleton<IHotkeyService, HotkeyService>();
             services.AddSingleton<IPythonInstallationService, PythonInstallationService>();
+            services.AddSingleton<IWhisperModelService, WhisperModelService>();
             services.AddSingleton(appSettings);
             services.AddTransient<PythonInstallationViewModel>();
-            services.AddTransient<AppSettingsViewModel>(sp =>
-                new AppSettingsViewModel(sp.GetRequiredService<AppSettings>(), sp.GetRequiredService<IHotkeyService>()));
+            services.AddTransient<AppSettingsViewModel>();
             services.AddTransient<SettingsViewModel>();
+            services.AddTransient<MicrophoneOverlayViewModel>();
 
             return services.BuildServiceProvider();
         }
@@ -116,6 +140,15 @@ namespace Whispr
             GC.SuppressFinalize(this);
 
             _trayIcon?.Dispose();
+
+            try
+            {
+                PythonEngine.Shutdown();
+            }
+            catch (NotSupportedException ex)
+            {
+                Debug.WriteLine($"PythonEngine shutdown failed: {ex.Message}");
+            }
         }
     }
 }
