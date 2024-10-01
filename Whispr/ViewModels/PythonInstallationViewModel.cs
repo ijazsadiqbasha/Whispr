@@ -13,6 +13,7 @@ namespace Whispr.ViewModels
     public class PythonInstallationViewModel : ViewModelBase
     {
         private readonly IPythonInstallationService _pythonInstallationService;
+        private readonly IWhisperModelService _whisperModelService;
 
         private string _pythonStatusText = string.Empty;
         private bool _isPythonProgressVisible = false;
@@ -53,10 +54,11 @@ namespace Whispr.ViewModels
         public ReactiveCommand<Unit, Unit> DownloadPythonCommand { get; }
         public ReactiveCommand<Unit, Unit> VerifyPythonCommand { get; }
 
-        public PythonInstallationViewModel(IPythonInstallationService pythonInstallationService, AppSettings settings)
+        public PythonInstallationViewModel(IPythonInstallationService pythonInstallationService, IWhisperModelService whisperModelService, AppSettings settings)
             : base(settings)
         {
             _pythonInstallationService = pythonInstallationService;
+            _whisperModelService = whisperModelService;
             DownloadPythonCommand = ReactiveCommand.CreateFromTask(DownloadPython);
             VerifyPythonCommand = ReactiveCommand.CreateFromTask(VerifyPython);
             UpdateUIBasedOnSettings();
@@ -69,20 +71,6 @@ namespace Whispr.ViewModels
                 PythonStatusText = "Python is installed and verified.";
                 IsDownloadEnabled = false;
                 IsVerifyEnabled = false;
-
-                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                string pythonHome = Path.Combine(baseDirectory, "python");
-                string pythonDll = Path.Combine(pythonHome, "python311.dll");
-
-                Debug.WriteLine($"Setting PYTHONNET_PYDLL to: {pythonDll}");
-                Debug.WriteLine($"Setting PYTHONHOME to: {pythonHome}");
-
-                Environment.SetEnvironmentVariable("PYTHONNET_PYDLL", pythonDll);
-                Environment.SetEnvironmentVariable("PYTHONHOME", pythonHome);
-
-                Runtime.PythonDLL = pythonDll;
-                PythonEngine.Initialize();
-                Debug.WriteLine("Python runtime initialized successfully.");
             }
         }
 
@@ -90,6 +78,11 @@ namespace Whispr.ViewModels
         {
             await ExecuteWithProgressBar(async () =>
             {
+                if (_whisperModelService is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+
                 var isInstalled = await _pythonInstallationService.CheckPythonInstallationAsync();
                 if (isInstalled)
                 {
@@ -106,6 +99,11 @@ namespace Whispr.ViewModels
         {
             await ExecuteWithProgressBar(async () =>
             {
+                if (_whisperModelService is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+
                 var isPythonInstalled = await _pythonInstallationService.IsPythonInstalledAsync();
                 if (!isPythonInstalled)
                 {

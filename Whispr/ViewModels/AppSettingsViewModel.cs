@@ -138,7 +138,7 @@ namespace Whispr.ViewModels
             {
                 ModelProgressValue = 0.33;
                 ModelStatusText = "Downloading model...";
-                await _whisperModelService.DownloadAndConvertModelAsync(SelectedAIModel);
+                await _whisperModelService.DownloadModelAsync(SelectedAIModel);
 
                 ModelProgressValue = 100;
                 ModelStatusText = "Model downloaded and converted successfully";

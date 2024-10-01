@@ -26,6 +26,7 @@ namespace Whispr
         private Settings? _settings;
         private IHotkeyService? _hotkeyService;
         private MicrophoneOverlay? _microphoneOverlay;
+        private ServiceProvider? _serviceProvider;
 
         public override void Initialize()
         {
@@ -34,24 +35,26 @@ namespace Whispr
 
         public override void OnFrameworkInitializationCompleted()
         {
-            var services = ConfigureServices();
-
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                SetupTrayIcon(desktop);
+                _serviceProvider = ConfigureServices();
+
+                desktop.Exit += OnExit;
 
                 _settings = new Settings
                 {
-                    DataContext = services.GetRequiredService<SettingsViewModel>()
+                    DataContext = _serviceProvider.GetRequiredService<SettingsViewModel>()
                 };
 
-                _hotkeyService = services.GetRequiredService<IHotkeyService>();
+                _hotkeyService = _serviceProvider.GetRequiredService<IHotkeyService>();
                 _hotkeyService.HotkeyTriggered += OnHotkeyTriggered;
 
                 _microphoneOverlay = new MicrophoneOverlay
                 {
-                    DataContext = services.GetRequiredService<MicrophoneOverlayViewModel>()
+                    DataContext = _serviceProvider.GetRequiredService<MicrophoneOverlayViewModel>()
                 };
+
+                SetupTrayIcon(desktop);
             }
 
             base.OnFrameworkInitializationCompleted();
@@ -99,6 +102,7 @@ namespace Whispr
             services.AddTransient<AppSettingsViewModel>();
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<MicrophoneOverlayViewModel>();
+            services.AddSingleton<IAudioCaptureService, NAudioCaptureService>();
 
             return services.BuildServiceProvider();
         }
@@ -148,6 +152,20 @@ namespace Whispr
             catch (NotSupportedException ex)
             {
                 Debug.WriteLine($"PythonEngine shutdown failed: {ex.Message}");
+            }
+        }
+
+        private void OnExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
+        {
+            if (_serviceProvider != null)
+            {
+                var whisperModelService = _serviceProvider.GetService<IWhisperModelService>();
+                if (whisperModelService is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+
+                _serviceProvider.Dispose();
             }
         }
     }
