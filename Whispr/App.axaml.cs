@@ -47,7 +47,7 @@ namespace Whispr
 
                 _hotkeyService = _serviceProvider.GetRequiredService<IHotkeyService>();
                 _hotkeyService.HotkeyTriggered += OnHotkeyTriggered;
-                _hotkeyService.HotkeyReleased += OnHotkeyReleased;  // Add this line
+                _hotkeyService.HotkeyReleased += OnHotkeyReleased;
 
                 _microphoneOverlay = new MicrophoneOverlay
                 {
@@ -73,15 +73,8 @@ namespace Whispr
                     _isRecording = true;
                     if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
                     {
-                        switch(_appSettings?.RecordingMode)
-                        {
-                            case "Toggle with hotkey":
-                            case "Press and hold":
-                            case "Stop on silence":
-                                _recordingStartTime = DateTime.Now;
-                                ToggleMicrophoneOverlay(viewModel);
-                                break;
-                        }
+                        _recordingStartTime = DateTime.Now;
+                        ToggleMicrophoneOverlay(viewModel);
                     }
                 }
                 else if (_appSettings?.RecordingMode == "Toggle with hotkey")

@@ -105,7 +105,6 @@ namespace Whispr.ViewModels
             RecordingModes = [
                 "Toggle with hotkey",
                 "Press and hold",
-                "Stop on silence"
             ];
 
             DownloadModelCommand = ReactiveCommand.CreateFromTask(DownloadModel);
