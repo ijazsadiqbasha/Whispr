@@ -5,6 +5,8 @@ namespace Whispr.Services
 {
     public interface IPythonInstallationService
     {
+        event EventHandler InstallationCompleted;
+
         Task<bool> CheckPythonInstallationAsync();
         Task DownloadPythonAsync(IProgress<double> progress);
         Task ExtractPythonAsync(IProgress<double> progress);

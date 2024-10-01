@@ -10,28 +10,46 @@ namespace Whispr.Services
 {
     public class WhisperModelService : IWhisperModelService, IDisposable
     {
-        private readonly string _cacheDir;
-        private readonly SynchronizationContext _pythonContext;
-        private readonly AppSettings _appSettings;
+        private readonly AppSettings _settings;
         private PyModule? _voiceToTextModule;
-        private dynamic? _model;
-        private bool _isModelLoaded;
+        private dynamic? _loadedModel;
+        private bool _isModelLoaded = false;
         private string _loadedModelName = string.Empty;
+        private string? _cacheDir;
+        private readonly SynchronizationContext _pythonContext;
 
-        public WhisperModelService(AppSettings appSettings)
+        public WhisperModelService(AppSettings settings)
         {
-            _appSettings = appSettings;
-            _pythonContext = SynchronizationContext.Current ?? new SynchronizationContext();
+            _settings = settings;
             _cacheDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "whisper_models");
-            Directory.CreateDirectory(_cacheDir);
-
-            if (_appSettings.IsPythonInstalled)
-            {
-                InitializePythonEnvironment();
-            }
+            _pythonContext = SynchronizationContext.Current ?? new SynchronizationContext();
         }
 
-        public void InitializePythonEnvironment()
+        private Task<T> RunOnPythonThread<T>(Func<T> action)
+        {
+            var tcs = new TaskCompletionSource<T>();
+
+            _pythonContext.Post(_ =>
+            {
+                try
+                {
+                    using (Py.GIL())
+                    {
+                        var result = action();
+                        tcs.SetResult(result);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Python execution error: {ex.Message}");
+                    tcs.SetException(ex);
+                }
+            }, null);
+
+            return tcs.Task;
+        }
+
+        public void StartPythonRuntime()
         {
             try
             {
@@ -71,30 +89,6 @@ namespace Whispr.Services
             }
         }
 
-        private Task<T> RunOnPythonThread<T>(Func<T> action)
-        {
-            var tcs = new TaskCompletionSource<T>();
-
-            _pythonContext.Post(_ =>
-            {
-                try
-                {
-                    using (Py.GIL())
-                    {
-                        var result = action();
-                        tcs.SetResult(result);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Python execution error: {ex.Message}");
-                    tcs.SetException(ex);
-                }
-            }, null);
-
-            return tcs.Task;
-        }
-
         public async Task<bool> LoadModelAsync(string modelName)
         {
             if (_isModelLoaded && _loadedModelName == modelName)
@@ -107,30 +101,33 @@ namespace Whispr.Services
             {
                 try
                 {
-                    if (_loadedModelName != modelName)
+                    using (Py.GIL())
                     {
-                        _isModelLoaded = false;
-
-                        if (_model != null)
+                        if (_loadedModelName != modelName)
                         {
-                            dynamic gc = Py.Import("gc");
-                            gc.collect();
+                            _isModelLoaded = false;
+
+                            if (_loadedModel != null)
+                            {
+                                dynamic gc = Py.Import("gc");
+                                gc.collect();
+                            }
+
+                            _loadedModel = _voiceToTextModule?.InvokeMethod("load_model", new PyObject[] { new PyString(modelName), new PyString(_cacheDir!) });
+
+                            if (_loadedModel == null)
+                            {
+                                Debug.WriteLine($"Failed to load the model: {modelName}");
+                                return false;
+                            }
+
+                            Debug.WriteLine($"Model '{modelName}' loaded successfully.");
+                            _isModelLoaded = true;
+                            _loadedModelName = modelName;
                         }
-
-                        _model = _voiceToTextModule?.InvokeMethod("load_model", new PyObject[] { new PyString(modelName), new PyString(_cacheDir) });
-
-                        if (_model == null)
-                        {
-                            Debug.WriteLine($"Failed to load the model: {modelName}");
-                            return false;
-                        }
-
-                        Debug.WriteLine($"Model '{modelName}' loaded successfully.");
-                        _isModelLoaded = true;
-                        _loadedModelName = modelName;
+                        
+                        return true;
                     }
-                    
-                    return true;
                 }
                 catch (Exception e)
                 {
@@ -143,7 +140,7 @@ namespace Whispr.Services
 
         public async Task<string> TranscribeAsync(byte[] audioData)
         {
-            if (!_isModelLoaded || _model == null)
+            if (!_isModelLoaded || _loadedModel == null)
             {
                 throw new InvalidOperationException("Model is not loaded. Please load the model before transcribing.");
             }
@@ -152,20 +149,23 @@ namespace Whispr.Services
             {
                 try
                 {
-                    Debug.WriteLine("Starting transcription...");
-
-                    using (PyObject pyAudioData = audioData.ToPython())
+                    using (Py.GIL())
                     {
-                        dynamic result = _voiceToTextModule!.InvokeMethod("transcribe", pyAudioData, _model);
-                        string transcription = result.ToString();
+                        Debug.WriteLine("Starting transcription...");
 
-                        if (string.IsNullOrEmpty(transcription))
+                        using (PyObject pyAudioData = audioData.ToPython())
                         {
-                            throw new Exception("Transcription failed: result is empty.");
-                        }
+                            dynamic result = _voiceToTextModule!.InvokeMethod("transcribe", pyAudioData, _loadedModel);
+                            string transcription = result.ToString();
 
-                        Debug.WriteLine("Transcription completed successfully.");
-                        return transcription;
+                            if (string.IsNullOrEmpty(transcription))
+                            {
+                                throw new Exception("Transcription failed: result is empty.");
+                            }
+
+                            Debug.WriteLine("Transcription completed successfully.");
+                            return transcription;
+                        }
                     }
                 }
                 catch (Exception e)
@@ -182,17 +182,20 @@ namespace Whispr.Services
             {
                 try
                 {
-                    Debug.WriteLine($"Downloading model: {modelName}...");
-
-                    var result = _voiceToTextModule?.InvokeMethod("download_model", new PyObject[] { new PyString(modelName), new PyString(_cacheDir)});
-
-                    if (result == null)
+                    using (Py.GIL())
                     {
-                        throw new Exception("Download failed: result is null.");
-                    }
+                        Debug.WriteLine($"Downloading model: {modelName}...");
 
-                    Debug.WriteLine("Model download completed successfully.");
-                    return "Model downloaded successfully";
+                        var result = _voiceToTextModule?.InvokeMethod("download_model", new PyObject[] { new PyString(modelName), new PyString(_cacheDir!) });
+
+                        if (result == null)
+                        {
+                            throw new Exception("Download failed: result is null.");
+                        }
+
+                        Debug.WriteLine("Model download completed successfully.");
+                        return "Model downloaded successfully";
+                    }
                 }
                 catch (Exception e)
                 {
@@ -209,11 +212,7 @@ namespace Whispr.Services
 
         public void Dispose()
         {
-            if (PythonEngine.IsInitialized)
-            {
-                PythonEngine.Shutdown();
-                Debug.WriteLine("Python engine shutdown successfully.");
-            }
+            PythonEngine.Shutdown();
         }
     }
 }

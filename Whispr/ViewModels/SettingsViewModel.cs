@@ -1,7 +1,4 @@
-using ReactiveUI;
-using System.Reactive;
 using Whispr.Models;
-using Whispr.Services;
 
 namespace Whispr.ViewModels
 {

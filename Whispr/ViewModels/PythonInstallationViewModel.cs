@@ -1,8 +1,5 @@
-using Python.Runtime;
 using ReactiveUI;
 using System;
-using System.Diagnostics;
-using System.IO;
 using System.Reactive;
 using System.Threading.Tasks;
 using Whispr.Models;
@@ -19,7 +16,6 @@ namespace Whispr.ViewModels
         private bool _isPythonProgressVisible = false;
         private double _progressValue = 0;
         private bool _isDownloadEnabled = true;
-        private bool _isVerifyEnabled = true;
 
         public string PythonStatusText
         {
@@ -45,14 +41,7 @@ namespace Whispr.ViewModels
             set => this.RaiseAndSetIfChanged(ref _isDownloadEnabled, value);
         }
 
-        public bool IsVerifyEnabled
-        {
-            get => _isVerifyEnabled;
-            set => this.RaiseAndSetIfChanged(ref _isVerifyEnabled, value);
-        }
-
         public ReactiveCommand<Unit, Unit> DownloadPythonCommand { get; }
-        public ReactiveCommand<Unit, Unit> VerifyPythonCommand { get; }
 
         public PythonInstallationViewModel(IPythonInstallationService pythonInstallationService, IWhisperModelService whisperModelService, AppSettings settings)
             : base(settings)
@@ -60,7 +49,6 @@ namespace Whispr.ViewModels
             _pythonInstallationService = pythonInstallationService;
             _whisperModelService = whisperModelService;
             DownloadPythonCommand = ReactiveCommand.CreateFromTask(DownloadPython);
-            VerifyPythonCommand = ReactiveCommand.CreateFromTask(VerifyPython);
             UpdateUIBasedOnSettings();
         }
 
@@ -70,7 +58,6 @@ namespace Whispr.ViewModels
             {
                 PythonStatusText = "Python is installed and verified.";
                 IsDownloadEnabled = false;
-                IsVerifyEnabled = false;
             }
         }
 
@@ -95,32 +82,9 @@ namespace Whispr.ViewModels
             });
         }
 
-        private async Task VerifyPython()
-        {
-            await ExecuteWithProgressBar(async () =>
-            {
-                if (_whisperModelService is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-
-                var isPythonInstalled = await _pythonInstallationService.IsPythonInstalledAsync();
-                if (!isPythonInstalled)
-                {
-                    PythonStatusText = "Python is not installed. Please download Python first.";
-                    IsDownloadEnabled = true;
-                    return;
-                }
-
-                await PerformInstallationSteps();
-                await VerifyAndUpdateSettings();
-            });
-        }
-
         private async Task ExecuteWithProgressBar(Func<Task> action)
         {
             IsDownloadEnabled = false;
-            IsVerifyEnabled = false;
             IsPythonProgressVisible = true;
             ProgressValue = 0;
 
@@ -135,7 +99,6 @@ namespace Whispr.ViewModels
             }
             finally
             {
-                IsVerifyEnabled = true;
                 IsPythonProgressVisible = false;
             }
         }
@@ -181,7 +144,6 @@ namespace Whispr.ViewModels
         {
             PythonStatusText = message;
             IsDownloadEnabled = false;
-            IsVerifyEnabled = false;
             Settings.IsPythonInstalled = true;
             Settings.PythonPath = _pythonInstallationService.GetPythonPath();
             SaveSettings();

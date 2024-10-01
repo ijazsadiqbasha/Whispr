@@ -4,16 +4,16 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using Python.Runtime;
 
 namespace Whispr.Services
 {
     public class PythonInstallationService : IPythonInstallationService
     {
+        public event EventHandler? InstallationCompleted;
+
         private readonly IConfiguration _configuration;
         private readonly string _pythonDirectory;
         private readonly string _downloadUrl;
@@ -246,7 +246,14 @@ namespace Whispr.Services
             {
                 var output = await RunPythonCommandAsync("--version");
                 Debug.WriteLine($"Python version: {output.Trim()}");
-                return output.Contains("Python 3.");
+                var isVerified = output.Contains("Python 3.");
+                
+                if (isVerified)
+                {
+                    InstallationCompleted?.Invoke(this, EventArgs.Empty);
+                }
+                
+                return isVerified;
             }
             catch (Exception ex)
             {

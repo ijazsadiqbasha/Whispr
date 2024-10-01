@@ -7,7 +7,7 @@
         mc:Ignorable="d" Width="450" Height="450"
         x:Class="Whispr.Views.Settings"
         x:DataType="vm:SettingsViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/microphone.ico"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
         Title="Settings">

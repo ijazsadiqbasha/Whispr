@@ -6,7 +6,7 @@
              mc:Ignorable="d"
              x:Class="Whispr.Views.AppSettingsView"
              x:DataType="vm:AppSettingsViewModel">
-    <StackPanel>
+    <StackPanel Spacing="10">
         <TextBlock Text="Shortcut Key" Margin="0,0,0,5"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
             <TextBlock Text="CTRL + SHIFT + " VerticalAlignment="Center"/>
@@ -20,9 +20,5 @@
             <Button Content="Load" Command="{Binding LoadModelCommand}"/>
         </StackPanel>
         <TextBlock Text="{Binding ModelStatusText}" Margin="0,5,0,0"/>
-        <ProgressBar IsVisible="{Binding IsModelProgressVisible}" Value="{Binding ModelProgressValue}" Margin="0,5,0,0"
-					 Minimum="0"
-                     Maximum="1"
-                     Height="20"/>
     </StackPanel>
 </UserControl>

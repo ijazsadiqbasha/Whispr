@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-
 namespace Whispr.Services
 {
     public interface IWhisperModelService
@@ -8,5 +7,6 @@ namespace Whispr.Services
         Task<bool> LoadModelAsync(string modelName);
         Task<string> TranscribeAsync(byte[] audioData);
         bool IsModelLoaded();
+        void StartPythonRuntime();
     }
 }

@@ -17,7 +17,7 @@ def download_model(model_name, cache_dir):
         # Convert Hugging Face model to CTranslate2 format if it doesn't already exist
         if not os.path.exists(ct2_dir):
             converter = ctranslate2.converters.TransformersConverter(model_name)
-            converter.convert(ct2_dir, quantization="int8")
+            converter.convert(ct2_dir, quantization="float32")
 
             # Remove the models-- folder
             models_folder = os.path.join(cache_dir, f"models--{model_name.replace('/', '--')}")
@@ -39,7 +39,7 @@ def load_model(model_name, cache_dir):
         ct2_dir = os.path.join(cache_dir, f"{model_name.replace('/', '_')}_ct2")
 
         # Load the model using Faster-Whisper with float32
-        model = WhisperModel(ct2_dir, device="cpu", compute_type="int8")
+        model = WhisperModel(ct2_dir, device="cpu", compute_type="float32")
 
         return model
     except Exception as e:
@@ -51,7 +51,7 @@ def transcribe(audio_data, loadded_model):
         audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
 
         # Transcribe using the model
-        segments, info = loadded_model.transcribe(audio_np, beam_size=3, best_of=2, temperature=0.0)
+        segments, info = loadded_model.transcribe(audio_np, beam_size=1, best_of=1, temperature=0.0, language="en")
 
         # Combine all segments into a single string
         transcription = " ".join(segment.text for segment in segments)

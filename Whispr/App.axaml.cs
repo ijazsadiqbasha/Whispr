@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,18 +10,14 @@ using Whispr.Models;
 using Whispr.Services;
 using Whispr.ViewModels;
 using Whispr.Views;
-using SharpHook;
-using Avalonia.Metadata;
-using SharpHook.Native;
 using Python.Runtime;
 using Avalonia.Platform;
-using Avalonia.Threading;
-using System.IO;
 
 namespace Whispr
 {
     public partial class App : Application, IDisposable
     {
+        private AppSettings? _appSettings;
         private TrayIcon? _trayIcon;
         private Settings? _settings;
         private IHotkeyService? _hotkeyService;
@@ -63,26 +58,31 @@ namespace Whispr
 
         private void OnHotkeyTriggered(object? sender, EventArgs e)
         {
-            Debug.WriteLine("Hotkey triggered!");
-
             Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
-                if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
+                if (_appSettings?.IsPythonInstalled == false)
                 {
-                    viewModel.ToggleVisibility();
-                    if (viewModel.IsVisible)
+                    _settings?.Show();
+                }
+                else
+                {
+                    if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
                     {
-                        _microphoneOverlay.Show();
-                    }
-                    else
-                    {
-                        _microphoneOverlay.Hide();
+                        viewModel.ToggleVisibility();
+                        if (viewModel.IsVisible)
+                        {
+                            _microphoneOverlay.Show();
+                        }
+                        else
+                        {
+                            _microphoneOverlay.Hide();
+                        }
                     }
                 }
             });
         }
 
-        private static ServiceProvider ConfigureServices()
+        private ServiceProvider ConfigureServices()
         {
             var services = new ServiceCollection();
 
@@ -91,18 +91,18 @@ namespace Whispr
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
 
-            var appSettings = AppSettings.LoadOrCreate();
+            _appSettings = AppSettings.LoadOrCreate();
 
             services.AddSingleton<IConfiguration>(configuration);
             services.AddSingleton<IHotkeyService, HotkeyService>();
             services.AddSingleton<IPythonInstallationService, PythonInstallationService>();
             services.AddSingleton<IWhisperModelService, WhisperModelService>();
-            services.AddSingleton(appSettings);
+            services.AddSingleton(_appSettings);
             services.AddTransient<PythonInstallationViewModel>();
             services.AddTransient<AppSettingsViewModel>();
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<MicrophoneOverlayViewModel>();
-            services.AddSingleton<IAudioCaptureService, NAudioCaptureService>();
+            services.AddSingleton<IAudioCaptureService, AudioCaptureService>();
 
             return services.BuildServiceProvider();
         }
@@ -111,7 +111,7 @@ namespace Whispr
         {
             _trayIcon = new TrayIcon
             {
-                //Icon = new WindowIcon("/Assets/avalonia-logo.ico"),
+                Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://Whispr/Assets/microphone.ico"))),
                 ToolTipText = "SimpleDictation"
             };
 

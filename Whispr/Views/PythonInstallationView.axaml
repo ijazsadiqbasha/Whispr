@@ -8,12 +8,9 @@
              x:DataType="vm:PythonInstallationViewModel">
     <StackPanel Spacing="10">
         <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Content="Download and Install Python" 
+            <Button Content="Install Python and dependencies" 
                     Command="{Binding DownloadPythonCommand}"
                     IsEnabled="{Binding IsDownloadEnabled}"/>
-            <Button Content="Verify Python Installation" 
-                    Command="{Binding VerifyPythonCommand}"
-                    IsEnabled="{Binding IsVerifyEnabled}"/>
         </StackPanel>
         <TextBlock Text="{Binding PythonStatusText}" Margin="0,5,0,0"/>
         <ProgressBar IsVisible="{Binding IsPythonProgressVisible}" 
