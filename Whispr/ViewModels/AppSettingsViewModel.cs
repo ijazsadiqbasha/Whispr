@@ -16,6 +16,7 @@ namespace Whispr.ViewModels
         private string _modelStatusText = string.Empty;
         private string _selectedShortcutKey = string.Empty;
         private string _selectedAIModel = string.Empty;
+        private string _selectedRecordingMode = string.Empty;
 
         public string ModelStatusText
         {
@@ -48,8 +49,19 @@ namespace Whispr.ViewModels
             }
         }
 
+        public string SelectedRecordingMode
+        {
+            get => _selectedRecordingMode;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _selectedRecordingMode, value);
+                ChangeRecordingMode();
+            }
+        }
+
         public ObservableCollection<string> ShortcutKeys { get; set; }
         public ObservableCollection<string> AIModels { get; set; }
+        public ObservableCollection<string> RecordingModes { get; set; }
 
         public ReactiveCommand<Unit, Unit> DownloadModelCommand { get; }
         public ReactiveCommand<Unit, Unit> LoadModelCommand { get; }
@@ -90,6 +102,12 @@ namespace Whispr.ViewModels
                 "distil-whisper/distil-large-v2"
             ];
 
+            RecordingModes = [
+                "Toggle with hotkey",
+                "Press and hold",
+                "Stop on silence"
+            ];
+
             DownloadModelCommand = ReactiveCommand.CreateFromTask(DownloadModel);
 
             LoadModelCommand = ReactiveCommand.CreateFromTask(LoadModel);
@@ -99,6 +117,9 @@ namespace Whispr.ViewModels
             
             _selectedAIModel = Settings.AIModel;
             Debug.WriteLine($"Initial AIModel loaded from settings: {_selectedAIModel}");
+
+            _selectedRecordingMode = Settings.RecordingMode;
+            Debug.WriteLine($"Initial RecordingMode loaded from settings: {_selectedRecordingMode}");
 
             ChangeHotkey();
 
@@ -230,6 +251,13 @@ namespace Whispr.ViewModels
             Settings.AIModel = SelectedAIModel;
             SaveSettings();
             Debug.WriteLine("AI Model changed saved successfully");
+        }
+
+        private void ChangeRecordingMode()
+        {
+            Settings.RecordingMode = SelectedRecordingMode;
+            SaveSettings();
+            Debug.WriteLine("Recording mode changed saved successfully");
         }
 
         private static int ConvertShortcutKeyToKeyCode(string shortcutKey)

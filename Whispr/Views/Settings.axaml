@@ -4,7 +4,7 @@
         xmlns:local="clr-namespace:Whispr.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" Width="450" Height="450"
+        mc:Ignorable="d" Width="450" Height="525"
         x:Class="Whispr.Views.Settings"
         x:DataType="vm:SettingsViewModel"
         Icon="/Assets/microphone.ico"

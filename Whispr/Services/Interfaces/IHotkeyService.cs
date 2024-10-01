@@ -7,6 +7,7 @@ namespace Whispr.Services
         bool ChangeKey(int key);
 
         event EventHandler HotkeyTriggered;
+        event EventHandler HotkeyReleased;
         bool SimulateTextInput(string text);
     }
 }

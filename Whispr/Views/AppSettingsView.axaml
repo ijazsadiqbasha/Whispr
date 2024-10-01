@@ -20,5 +20,10 @@
             <Button Content="Load" Command="{Binding LoadModelCommand}"/>
         </StackPanel>
         <TextBlock Text="{Binding ModelStatusText}" Margin="0,5,0,0"/>
+        
+        <TextBlock Text="Recording Mode" Margin="0,15,0,5"/>
+        <ComboBox ItemsSource="{Binding RecordingModes}" 
+                  SelectedItem="{Binding SelectedRecordingMode}" 
+                  HorizontalAlignment="Left"/>
     </StackPanel>
 </UserControl>

@@ -13,8 +13,10 @@ namespace Whispr.Services
         private readonly TaskPoolGlobalHook _hook;
         private bool _ctrlPressed = false;
         private bool _shiftPressed = false;
+        private bool _isHotkeyPressed = false;
 
         public event EventHandler? HotkeyTriggered;
+        public event EventHandler? HotkeyReleased;
 
         public HotkeyService(AppSettings appSettings)
         {
@@ -39,8 +41,9 @@ namespace Whispr.Services
                     _shiftPressed = true;
                     break;
                 default:
-                    if ((int)e.Data.KeyCode == _appSettings.Hotkey && _ctrlPressed && _shiftPressed)
+                    if ((int)e.Data.KeyCode == _appSettings.Hotkey && _ctrlPressed && _shiftPressed && !_isHotkeyPressed)
                     {
+                        _isHotkeyPressed = true;
                         HotkeyTriggered?.Invoke(this, EventArgs.Empty);
                     }
                     break;
@@ -58,6 +61,13 @@ namespace Whispr.Services
                 case KeyCode.VcLeftShift:
                 case KeyCode.VcRightShift:
                     _shiftPressed = false;
+                    break;
+                default:
+                    if ((int)e.Data.KeyCode == _appSettings.Hotkey)
+                    {
+                        _isHotkeyPressed = false;
+                        HotkeyReleased?.Invoke(this, EventArgs.Empty);
+                    }
                     break;
             }
         }

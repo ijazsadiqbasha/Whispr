@@ -14,6 +14,7 @@ namespace Whispr.ViewModels
         private readonly AppSettings _appSettings;
         private readonly IHotkeyService _hotkeyService; 
         private bool _isVisible;
+        private bool _isRecording;
         private byte[] _audioData;
         private bool _isMicrophoneInitialized;
         private float _audioLevel;
@@ -22,10 +23,16 @@ namespace Whispr.ViewModels
         public bool IsVisible
         {
             get => _isVisible;
+            set => this.RaiseAndSetIfChanged(ref _isVisible, value);
+        }
+
+        public bool IsRecording
+        {
+            get => _isRecording;
             set
             {
-                this.RaiseAndSetIfChanged(ref _isVisible, value);
-                HandleVisibilityChange(value);
+                this.RaiseAndSetIfChanged(ref _isRecording, value);
+                HandleRecordingChange(value);
             }
         }
 
@@ -69,9 +76,9 @@ namespace Whispr.ViewModels
             }
         }
 
-        private async void HandleVisibilityChange(bool isVisible)
+        private async void HandleRecordingChange(bool isRecording)
         {
-            if (isVisible)
+            if (isRecording)
             {
                 await StartRecordingAsync();
             }
@@ -107,7 +114,7 @@ namespace Whispr.ViewModels
                 try
                 {
                     string transcription = await _whisperModelService.TranscribeAsync(_audioData);
-                    
+
                     _hotkeyService.SimulateTextInput(transcription);
                     Debug.WriteLine($"Transcription: {transcription}");
                 }
@@ -144,6 +151,11 @@ namespace Whispr.ViewModels
         public void ToggleVisibility()
         {
             IsVisible = !IsVisible;
+        }
+
+        public void ToggleRecording()
+        {
+            IsRecording = !IsRecording;
         }
     }
 }

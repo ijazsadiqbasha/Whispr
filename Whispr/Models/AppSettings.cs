@@ -11,6 +11,7 @@ namespace Whispr.Models
         public bool IsPythonInstalled { get; set; } = false;
         public int Hotkey { get; set; } = 32;
         public string AIModel { get; set; } = "openai/whisper-tiny";
+        public string RecordingMode { get; set; } = "Press and hold";
 
         private const string SettingsFileName = "localsettings.json";
         private static readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };

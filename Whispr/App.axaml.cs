@@ -12,6 +12,7 @@ using Whispr.ViewModels;
 using Whispr.Views;
 using Python.Runtime;
 using Avalonia.Platform;
+using System.Threading.Tasks;
 
 namespace Whispr
 {
@@ -22,7 +23,9 @@ namespace Whispr
         private Settings? _settings;
         private IHotkeyService? _hotkeyService;
         private MicrophoneOverlay? _microphoneOverlay;
+        private DateTime _recordingStartTime;
         private ServiceProvider? _serviceProvider;
+        private bool _isRecording = false;
 
         public override void Initialize()
         {
@@ -44,6 +47,7 @@ namespace Whispr
 
                 _hotkeyService = _serviceProvider.GetRequiredService<IHotkeyService>();
                 _hotkeyService.HotkeyTriggered += OnHotkeyTriggered;
+                _hotkeyService.HotkeyReleased += OnHotkeyReleased;  // Add this line
 
                 _microphoneOverlay = new MicrophoneOverlay
                 {
@@ -64,22 +68,65 @@ namespace Whispr
                 {
                     _settings?.Show();
                 }
-                else
+                else if (!_isRecording)
                 {
+                    _isRecording = true;
                     if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
                     {
-                        viewModel.ToggleVisibility();
-                        if (viewModel.IsVisible)
+                        switch(_appSettings?.RecordingMode)
                         {
-                            _microphoneOverlay.Show();
-                        }
-                        else
-                        {
-                            _microphoneOverlay.Hide();
+                            case "Toggle with hotkey":
+                            case "Press and hold":
+                            case "Stop on silence":
+                                _recordingStartTime = DateTime.Now;
+                                ToggleMicrophoneOverlay(viewModel);
+                                break;
                         }
                     }
                 }
+                else if (_appSettings?.RecordingMode == "Toggle with hotkey")
+                {
+                    _isRecording = false;
+                    if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
+                    {
+                        ToggleMicrophoneOverlay(viewModel);
+                    }
+                }
             });
+        }
+
+        private void OnHotkeyReleased(object? sender, EventArgs e)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                if (_isRecording && _appSettings?.RecordingMode == "Press and hold")
+                {
+                    if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
+                    {
+                        var elapsedTime = DateTime.Now - _recordingStartTime;
+                        if (elapsedTime.TotalSeconds < 1)
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(1) - elapsedTime);
+                        }
+                        ToggleMicrophoneOverlay(viewModel);
+                    }
+                }
+                _isRecording = false;
+            });
+        }
+
+        private void ToggleMicrophoneOverlay(MicrophoneOverlayViewModel viewModel)
+        {
+            viewModel.ToggleVisibility();
+            viewModel.ToggleRecording();
+            if (viewModel.IsVisible)
+            {
+                _microphoneOverlay?.Show();
+            }
+            else
+            {
+                _microphoneOverlay?.Hide();
+            }
         }
 
         private ServiceProvider ConfigureServices()
