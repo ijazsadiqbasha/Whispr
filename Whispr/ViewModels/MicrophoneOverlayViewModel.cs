@@ -157,7 +157,9 @@ namespace Whispr.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Transcription failed: {ex.Message}");
+                    IsProcessing = false;
+                    await Task.Delay(100); // Short delay to ensure UI updates
+                    // Remove the IsVisible = false line from here
                 }
                 finally
                 {
