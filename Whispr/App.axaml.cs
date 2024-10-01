@@ -112,8 +112,6 @@ namespace Whispr
         {
             viewModel.ToggleVisibility();
             viewModel.ToggleRecording();
-            // Remove this line
-            // viewModel.IsGlowVisible = true;
             if (viewModel.IsVisible)
             {
                 _microphoneOverlay?.Show();
@@ -121,17 +119,26 @@ namespace Whispr
             }
         }
 
-        private void OnProcessingCompleted(object? sender, EventArgs e)
+        private void OnProcessingCompleted(object? sender, string transcription)
         {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            try
             {
-                if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
-                    viewModel.ProcessingCompleted -= OnProcessingCompleted;
-                    viewModel.IsVisible = false;
-                    _microphoneOverlay?.Hide();
-                }
-            });
+                    if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel && !string.IsNullOrEmpty(transcription))
+                    {
+                        viewModel.ProcessingCompleted -= OnProcessingCompleted;
+                        viewModel.IsVisible = false;
+                        _microphoneOverlay?.Hide();
+
+                        _hotkeyService?.SimulateTextInput(transcription);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error in OnProcessingCompleted: {ex.Message}");
+            }
         }
 
         private ServiceProvider ConfigureServices()

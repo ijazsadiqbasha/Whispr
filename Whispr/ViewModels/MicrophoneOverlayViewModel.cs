@@ -152,14 +152,14 @@ namespace Whispr.ViewModels
                     UpdateProgressAngle(360); 
                     await Task.Delay(500);
 
-                    _hotkeyService.SimulateTextInput(transcription);
+                    ProcessingCompleted?.Invoke(this, transcription);
+
                     Debug.WriteLine($"Transcription: {transcription}");
                 }
                 catch (Exception ex)
                 {
                     IsProcessing = false;
-                    await Task.Delay(100); // Short delay to ensure UI updates
-                    // Remove the IsVisible = false line from here
+                    await Task.Delay(100);
                 }
                 finally
                 {
@@ -174,8 +174,7 @@ namespace Whispr.ViewModels
             {
                 Debug.WriteLine("No audio data to transcribe");
             }
-
-            ProcessingCompleted?.Invoke(this, EventArgs.Empty);
+            
             UpdateProgressAngle(0);
         }
 
@@ -331,7 +330,7 @@ namespace Whispr.ViewModels
             });
         }
 
-        public event EventHandler? ProcessingCompleted;
+        public event EventHandler<string>? ProcessingCompleted;
     }
 
     public class AudioBar

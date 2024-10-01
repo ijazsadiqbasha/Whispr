@@ -3,6 +3,8 @@ using SharpHook;
 using SharpHook.Native;
 using System;
 using System.Diagnostics;
+using TextCopy;
+using System.Threading.Tasks;
 
 namespace Whispr.Services
 {
@@ -83,11 +85,15 @@ namespace Whispr.Services
             return false;
         }
 
-        public bool SimulateTextInput(string text)
+        public async Task<bool> SimulateTextInput(string text)
         {
             try
             {
-                _eventSimulator.SimulateTextEntry(text);
+                await ClipboardService.SetTextAsync(text);
+                _eventSimulator.SimulateKeyPress(KeyCode.VcLeftControl);
+                _eventSimulator.SimulateKeyPress(KeyCode.VcV);
+                _eventSimulator.SimulateKeyRelease(KeyCode.VcV);
+                _eventSimulator.SimulateKeyRelease(KeyCode.VcLeftControl);
 
                 return true;
             }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Whispr.Services
 {
@@ -8,6 +9,6 @@ namespace Whispr.Services
 
         event EventHandler HotkeyTriggered;
         event EventHandler HotkeyReleased;
-        bool SimulateTextInput(string text);
+        Task<bool> SimulateTextInput(string text);
     }
 }
