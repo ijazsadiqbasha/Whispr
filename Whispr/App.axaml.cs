@@ -115,11 +115,21 @@ namespace Whispr
             if (viewModel.IsVisible)
             {
                 _microphoneOverlay?.Show();
+                viewModel.ProcessingCompleted += OnProcessingCompleted;
             }
-            else
+        }
+
+        private void OnProcessingCompleted(object? sender, EventArgs e)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                _microphoneOverlay?.Hide();
-            }
+                if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
+                {
+                    viewModel.ProcessingCompleted -= OnProcessingCompleted;
+                    viewModel.IsVisible = false;
+                    _microphoneOverlay?.Hide();
+                }
+            });
         }
 
         private ServiceProvider ConfigureServices()
