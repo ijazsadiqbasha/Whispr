@@ -138,7 +138,7 @@ namespace Whispr.Services
             });
         }
 
-        public async Task<string> TranscribeAsync(byte[] audioData)
+        public async Task<string> TranscribeAsync(byte[] audioData, Action<int> progressCallback)
         {
             if (!_isModelLoaded || _loadedModel == null)
             {
@@ -153,9 +153,16 @@ namespace Whispr.Services
                     {
                         Debug.WriteLine("Starting transcription...");
 
-                        using (PyObject pyAudioData = audioData.ToPython())
+                        Action<double> pyProgressHandler = (progress) =>
                         {
-                            dynamic result = _voiceToTextModule!.InvokeMethod("transcribe", pyAudioData, _loadedModel);
+                            int progress360 = (int)(progress * 360);
+                            progressCallback?.Invoke(progress360);
+                        };
+
+                        using (PyObject pyAudioData = audioData.ToPython())
+                        using (PyObject pyProgressHandlerFunc = pyProgressHandler.ToPython())
+                        {
+                            dynamic result = _voiceToTextModule!.InvokeMethod("transcribe", pyAudioData, _loadedModel, pyProgressHandlerFunc);
                             string transcription = result.ToString();
 
                             if (string.IsNullOrEmpty(transcription))

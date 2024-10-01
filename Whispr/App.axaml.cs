@@ -62,7 +62,7 @@ namespace Whispr
 
         private void OnHotkeyTriggered(object? sender, EventArgs e)
         {
-            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
             {
                 if (_appSettings?.IsPythonInstalled == false)
                 {
@@ -101,7 +101,7 @@ namespace Whispr
                         {
                             await Task.Delay(TimeSpan.FromSeconds(1) - elapsedTime);
                         }
-                        ToggleMicrophoneOverlay(viewModel);
+                       ToggleMicrophoneOverlay(viewModel);
                     }
                 }
                 _isRecording = false;
@@ -112,14 +112,26 @@ namespace Whispr
         {
             viewModel.ToggleVisibility();
             viewModel.ToggleRecording();
+            // Remove this line
+            // viewModel.IsGlowVisible = true;
             if (viewModel.IsVisible)
             {
                 _microphoneOverlay?.Show();
+                viewModel.ProcessingCompleted += OnProcessingCompleted;
             }
-            else
+        }
+
+        private void OnProcessingCompleted(object? sender, EventArgs e)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                _microphoneOverlay?.Hide();
-            }
+                if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
+                {
+                    viewModel.ProcessingCompleted -= OnProcessingCompleted;
+                    viewModel.IsVisible = false;
+                    _microphoneOverlay?.Hide();
+                }
+            });
         }
 
         private ServiceProvider ConfigureServices()

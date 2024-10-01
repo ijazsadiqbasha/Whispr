@@ -45,7 +45,7 @@ def load_model(model_name, cache_dir):
     except Exception as e:
         raise
 
-def transcribe(audio_data, loadded_model):
+def transcribe(audio_data, loadded_model, progress_callback=None):
     try:
         # Convert audio_data to numpy array
         audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
@@ -53,9 +53,22 @@ def transcribe(audio_data, loadded_model):
         # Transcribe using the model
         segments, info = loadded_model.transcribe(audio_np, beam_size=1, best_of=1, temperature=0.0, language="en")
 
-        # Combine all segments into a single string
-        transcription = " ".join(segment.text for segment in segments)
+        transcription = []
+        segment_count = 0  # Track number of segments processed
 
-        return transcription
+        # Iterate through the segments
+        for segment in segments:
+            transcription.append(segment.text)
+            segment_count += 1
+
+            # Invoke the progress callback with a proportional value
+            if progress_callback:
+                # Fake progress based on the number of segments processed
+                # Assuming a maximum of 100 segments for progress tracking purposes
+                fake_progress = min(segment_count / 100, 1.0)  # Cap at 1.0
+                progress_callback(fake_progress)
+
+        # Combine all segments into a single string
+        return " ".join(transcription)
     except Exception as e:
         raise
