@@ -13,7 +13,8 @@
         WindowStartupLocation="Manual"
         ShowInTaskbar="False"
         Topmost="True"
-        CanResize="False">
+        CanResize="False"
+		Focusable="False">
     <Window.Styles>
         <Style Selector="Ellipse.pulse">
             <Style.Animations>

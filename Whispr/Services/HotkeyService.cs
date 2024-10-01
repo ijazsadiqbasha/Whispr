@@ -107,6 +107,7 @@ namespace Whispr.Services
         public void Dispose()
         {
             _hook.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -3,13 +3,10 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Whispr.Services;
-using Whispr.Models;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Avalonia.Threading;
 using System.Collections.Generic;
-using Avalonia.Media; // Use Avalonia.Media instead of System.Windows.Media
-using System.Timers;
+using Avalonia.Media;
 
 namespace Whispr.ViewModels
 {
@@ -17,8 +14,6 @@ namespace Whispr.ViewModels
     {
         private readonly IAudioCaptureService _audioCaptureService;
         private readonly IWhisperModelService _whisperModelService;
-        private readonly AppSettings _appSettings;
-        private readonly IHotkeyService _hotkeyService;
         private bool _isVisible;
         private bool _isRecording;
         private byte[] _audioData;
@@ -26,9 +21,9 @@ namespace Whispr.ViewModels
         private float _audioLevel;
         private bool _isModelLoaded = false;
         private ObservableCollection<AudioBar> _audioBars;
-        private float _maxAudioLevel = 0.1f; // Initialize with a small value
-        private const float AUDIO_LEVEL_DECAY_FACTOR = 0.999f; // Decay factor for max audio level
-        private const int BAR_COUNT = 30; // Increased from 10 to 30
+        private float _maxAudioLevel = 0.1f;
+        private const float AUDIO_LEVEL_DECAY_FACTOR = 0.999f;
+        private const int BAR_COUNT = 30;
         private bool _isProcessing;
         private double _progressAngle;
         private double _audioBarsOpacity = 1;
@@ -75,14 +70,12 @@ namespace Whispr.ViewModels
             set => this.RaiseAndSetIfChanged(ref _progressColor, value);
         }
 
-        public MicrophoneOverlayViewModel(IAudioCaptureService audioCaptureService, IWhisperModelService whisperModelService, AppSettings appSettings, IHotkeyService hotkeyService)
+        public MicrophoneOverlayViewModel(IAudioCaptureService audioCaptureService, IWhisperModelService whisperModelService)
         {
             _audioCaptureService = audioCaptureService;
             _whisperModelService = whisperModelService;
-            _appSettings = appSettings;
-            _hotkeyService = hotkeyService;
             _isVisible = false;
-            _audioData = Array.Empty<byte>();
+            _audioData = [];
             _isMicrophoneInitialized = false;
 
             _audioCaptureService.AudioDataCaptured += OnAudioDataCaptured;
@@ -123,7 +116,7 @@ namespace Whispr.ViewModels
                 Debug.WriteLine("Cannot start recording: Microphone not initialized");
                 return;
             }
-            _audioData = Array.Empty<byte>();
+            _audioData = [];
             await _audioCaptureService.StartCaptureAsync();
             Debug.WriteLine("Started recording");
         }
@@ -158,6 +151,7 @@ namespace Whispr.ViewModels
                 }
                 catch (Exception ex)
                 {
+                    Debug.WriteLine($"Error with transcription: {ex.Message}");
                     IsProcessing = false;
                     await Task.Delay(100);
                 }
@@ -237,7 +231,7 @@ namespace Whispr.ViewModels
             });
         }
 
-        private string GetColorForBar(double height, bool isRecording)
+        private static string GetColorForBar(double height, bool isRecording)
         {
             if (!isRecording)
                 return "White";

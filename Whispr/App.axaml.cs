@@ -62,7 +62,7 @@ namespace Whispr
 
         private void OnHotkeyTriggered(object? sender, EventArgs e)
         {
-            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 if (_appSettings?.IsPythonInstalled == false)
                 {

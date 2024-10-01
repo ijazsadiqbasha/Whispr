@@ -8,22 +8,15 @@ using Whispr.Models;
 
 namespace Whispr.Services
 {
-    public class WhisperModelService : IWhisperModelService, IDisposable
+    public class WhisperModelService(AppSettings settings) : IWhisperModelService, IDisposable
     {
-        private readonly AppSettings _settings;
+        private readonly AppSettings _settings = settings;
         private PyModule? _voiceToTextModule;
         private dynamic? _loadedModel;
         private bool _isModelLoaded = false;
         private string _loadedModelName = string.Empty;
-        private string? _cacheDir;
-        private readonly SynchronizationContext _pythonContext;
-
-        public WhisperModelService(AppSettings settings)
-        {
-            _settings = settings;
-            _cacheDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "whisper_models");
-            _pythonContext = SynchronizationContext.Current ?? new SynchronizationContext();
-        }
+        private readonly string? _cacheDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "whisper_models");
+        private readonly SynchronizationContext _pythonContext = SynchronizationContext.Current ?? new SynchronizationContext();
 
         private Task<T> RunOnPythonThread<T>(Func<T> action)
         {
@@ -159,20 +152,19 @@ namespace Whispr.Services
                             progressCallback?.Invoke(progress360);
                         };
 
-                        using (PyObject pyAudioData = audioData.ToPython())
-                        using (PyObject pyProgressHandlerFunc = pyProgressHandler.ToPython())
+                        using PyObject pyAudioData = audioData.ToPython();
+                        using PyObject pyProgressHandlerFunc = pyProgressHandler.ToPython();
+
+                        dynamic result = _voiceToTextModule!.InvokeMethod("transcribe", pyAudioData, _loadedModel, pyProgressHandlerFunc);
+                        string transcription = result.ToString();
+
+                        if (string.IsNullOrEmpty(transcription))
                         {
-                            dynamic result = _voiceToTextModule!.InvokeMethod("transcribe", pyAudioData, _loadedModel, pyProgressHandlerFunc);
-                            string transcription = result.ToString();
-
-                            if (string.IsNullOrEmpty(transcription))
-                            {
-                                throw new Exception("Transcription failed: result is empty.");
-                            }
-
-                            Debug.WriteLine("Transcription completed successfully.");
-                            return transcription;
+                            throw new Exception("Transcription failed: result is empty.");
                         }
+
+                        Debug.WriteLine("Transcription completed successfully.");
+                        return transcription;
                     }
                 }
                 catch (Exception e)
@@ -193,13 +185,7 @@ namespace Whispr.Services
                     {
                         Debug.WriteLine($"Downloading model: {modelName}...");
 
-                        var result = _voiceToTextModule?.InvokeMethod("download_model", new PyObject[] { new PyString(modelName), new PyString(_cacheDir!) });
-
-                        if (result == null)
-                        {
-                            throw new Exception("Download failed: result is null.");
-                        }
-
+                        var result = (_voiceToTextModule?.InvokeMethod("download_model", new PyObject[] { new PyString(modelName), new PyString(_cacheDir!) })) ?? throw new Exception("Download failed: result is null.");
                         Debug.WriteLine("Model download completed successfully.");
                         return "Model downloaded successfully";
                     }
@@ -220,6 +206,7 @@ namespace Whispr.Services
         public void Dispose()
         {
             PythonEngine.Shutdown();
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -1,7 +1,6 @@
 using NAudio.Wave;
 using System;
 using System.Buffers;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Whispr.Services
