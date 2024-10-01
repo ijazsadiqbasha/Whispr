@@ -110,6 +110,7 @@ namespace Whispr.ViewModels
                 {
                     string transcription = await _whisperModelService.TranscribeAsync(_audioData);
                     Debug.WriteLine($"Transcription: {transcription}");
+                    // TODO: Handle the transcription result (e.g., display it in the UI)
                 }
                 catch (InvalidOperationException)
                 {
@@ -130,7 +131,7 @@ namespace Whispr.ViewModels
             }
         }
 
-        private void OnAudioDataCaptured(object sender, byte[] e)
+        private void OnAudioDataCaptured(object? sender, byte[] e)
         {
             _audioData = e;
             Debug.WriteLine($"Captured {e.Length} bytes of audio data");
@@ -145,34 +146,6 @@ namespace Whispr.ViewModels
         {
             IsVisible = !IsVisible;
             Debug.WriteLine($"Visibility toggled: {IsVisible}");
-        }
-
-        public async Task DownloadModelAsync()
-        {
-            try
-            {
-                await _whisperModelService.DownloadModelAsync(_appSettings.AIModel);
-                Debug.WriteLine("Whisper model downloaded successfully");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to download Whisper model: {ex.Message}");
-            }
-        }
-
-        public async Task LoadModelAsync()
-        {
-            try
-            {
-                bool loaded = await _whisperModelService.LoadModelAsync(_appSettings.AIModel);
-                IsModelLoaded = loaded;
-                Debug.WriteLine($"Whisper model loaded successfully: {loaded}");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to load Whisper model: {ex.Message}");
-                IsModelLoaded = false;
-            }
         }
     }
 }

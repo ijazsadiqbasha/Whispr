@@ -17,6 +17,7 @@ using SharpHook.Native;
 using Python.Runtime;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using System.IO;
 
 namespace Whispr
 {
@@ -135,7 +136,15 @@ namespace Whispr
 
         private void ShowSettingsWindow()
         {
-            _settings?.Show();
+            if (_settings != null)
+            {
+                _settings.Show();
+                _settings.Closing += (sender, args) =>
+                {
+                    args.Cancel = true;
+                    _settings.Hide();
+                };
+            }
         }
 
         public void Dispose()

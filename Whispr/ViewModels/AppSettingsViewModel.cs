@@ -149,8 +149,10 @@ namespace Whispr.ViewModels
                 Console.Error.WriteLine(errorMessage);
                 ModelStatusText = errorMessage;
             }
-
-            IsModelProgressVisible = false;
+            finally
+            {
+                IsModelProgressVisible = false;
+            }
         }
 
         private async Task LoadModel()
@@ -159,8 +161,8 @@ namespace Whispr.ViewModels
 
             try
             {
-                await _whisperModelService.LoadModelAsync(SelectedAIModel);
-                ModelStatusText = "Model loaded and running.";
+                bool success = await _whisperModelService.LoadModelAsync(SelectedAIModel);
+                ModelStatusText = success ? "Model loaded and running." : "Failed to load model.";
             }
             catch (Exception e)
             {

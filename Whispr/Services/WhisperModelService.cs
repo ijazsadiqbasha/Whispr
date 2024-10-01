@@ -1,8 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Python.Runtime;
@@ -15,11 +13,10 @@ namespace Whispr.Services
         private readonly string _cacheDir;
         private readonly SynchronizationContext _pythonContext;
         private readonly AppSettings _appSettings;
-        private bool _isPythonInitialized = false;
-        private dynamic _sys;
-        private dynamic _voice_to_text;
-        private dynamic _model;
-        private bool _isModelLoaded = false;
+        private PyModule? _voiceToTextModule;
+        private dynamic? _model;
+        private bool _isModelLoaded;
+        private string _loadedModelName = string.Empty;
 
         public WhisperModelService(AppSettings appSettings)
         {
@@ -34,94 +31,110 @@ namespace Whispr.Services
             }
         }
 
-        private void InitializePythonEnvironment()
+        public void InitializePythonEnvironment()
         {
-            if (!_isPythonInitialized)
+            try
             {
+                if (PythonEngine.IsInitialized)
+                {
+                    Debug.WriteLine("Python engine is already initialized.");
+                    return;
+                }
+
                 string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
                 string pythonHome = Path.Combine(baseDirectory, "python");
                 string pythonDll = Path.Combine(pythonHome, "python311.dll");
 
-                Debug.WriteLine($"Setting PYTHONNET_PYDLL to: {pythonDll}");
-                Debug.WriteLine($"Setting PYTHONHOME to: {pythonHome}");
-
-                Environment.SetEnvironmentVariable("PYTHONNET_PYDLL", pythonDll);
-                Environment.SetEnvironmentVariable("PYTHONHOME", pythonHome);
+                if (!File.Exists(pythonDll))
+                    throw new FileNotFoundException($"Python DLL not found at {pythonDll}");
 
                 Runtime.PythonDLL = pythonDll;
+                PythonEngine.PythonHome = pythonHome;
                 PythonEngine.Initialize();
-                _isPythonInitialized = true;
+
                 Debug.WriteLine("Python runtime initialized successfully.");
 
                 using (Py.GIL())
                 {
-                    _sys = Py.Import("sys");
-                    string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets").Replace("\\", "/");
-                    _sys.path.append(scriptPath);
-                    _voice_to_text = Py.Import("voice_to_text");
+                    string scriptPath = Path.Combine(baseDirectory, "Assets").Replace("\\", "/");
+                    string pythonCode = $"import sys; sys.path.append('{scriptPath}'); import voice_to_text";
+                    PythonEngine.Exec(pythonCode);
+                    _voiceToTextModule = (PyModule)Py.Import("voice_to_text");
+
                     Debug.WriteLine("Voice to text module imported successfully.");
                 }
             }
-        }
-
-        public void Dispose()
-        {
-            if (_isPythonInitialized)
+            catch (Exception ex)
             {
-                PythonEngine.Shutdown();
-                _isPythonInitialized = false;
+                Debug.WriteLine($"Python initialization failed: {ex.Message}");
+                throw new Exception("Failed to initialize Python environment", ex);
             }
         }
 
         private Task<T> RunOnPythonThread<T>(Func<T> action)
         {
             var tcs = new TaskCompletionSource<T>();
+
             _pythonContext.Post(_ =>
             {
                 try
                 {
                     using (Py.GIL())
                     {
-                        Debug.WriteLine("Acquired Python GIL");
                         var result = action();
-                        Debug.WriteLine("Action completed successfully");
                         tcs.SetResult(result);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Exception in RunOnPythonThread: {ex}");
+                    Debug.WriteLine($"Python execution error: {ex.Message}");
                     tcs.SetException(ex);
                 }
             }, null);
+
             return tcs.Task;
         }
 
         public async Task<bool> LoadModelAsync(string modelName)
         {
+            if (_isModelLoaded && _loadedModelName == modelName)
+            {
+                Debug.WriteLine("Model is already loaded.");
+                return true;
+            }
+
             return await RunOnPythonThread(() =>
             {
                 try
                 {
-                    if (_isModelLoaded)
+                    if (_loadedModelName != modelName)
                     {
-                        Debug.WriteLine("Model already loaded, skipping load operation.");
-                        return true;
-                    }
+                        _isModelLoaded = false;
 
-                    Debug.WriteLine($"Starting to load model: {modelName}");
-                    _model = _voice_to_text.load_model(modelName, _cacheDir, new Action<int>(progress =>
-                    {
-                        Debug.WriteLine($"Model Load Progress: {progress}%");
-                    }));
-                    Debug.WriteLine("Model loading completed successfully");
-                    _isModelLoaded = true;
+                        if (_model != null)
+                        {
+                            dynamic gc = Py.Import("gc");
+                            gc.collect();
+                        }
+
+                        _model = _voiceToTextModule?.InvokeMethod("load_model", new PyObject[] { new PyString(modelName), new PyString(_cacheDir) });
+
+                        if (_model == null)
+                        {
+                            Debug.WriteLine($"Failed to load the model: {modelName}");
+                            return false;
+                        }
+
+                        Debug.WriteLine($"Model '{modelName}' loaded successfully.");
+                        _isModelLoaded = true;
+                        _loadedModelName = modelName;
+                    }
+                    
                     return true;
                 }
                 catch (Exception e)
                 {
-                    Debug.WriteLine($"Exception in LoadModelAsync: {e.Message}");
-                    Debug.WriteLine($"Stack Trace: {e.StackTrace}");
+                    Debug.WriteLine($"Error loading model '{modelName}': {e.Message}");
                     _isModelLoaded = false;
                     return false;
                 }
@@ -130,7 +143,7 @@ namespace Whispr.Services
 
         public async Task<string> TranscribeAsync(byte[] audioData)
         {
-            if (!_isModelLoaded)
+            if (!_isModelLoaded || _model == null)
             {
                 throw new InvalidOperationException("Model is not loaded. Please load the model before transcribing.");
             }
@@ -139,47 +152,51 @@ namespace Whispr.Services
             {
                 try
                 {
-                    Debug.WriteLine("Starting transcription");
-                    var result = _voice_to_text.transcribe(audioData, _model, new Action<int>(progress =>
+                    Debug.WriteLine("Starting transcription...");
+
+                    using (PyObject pyAudioData = audioData.ToPython())
                     {
-                        Debug.WriteLine($"Transcription Progress: {progress}%");
-                    }));
-                    Debug.WriteLine("Transcription completed successfully");
-                    return result;
+                        dynamic result = _voiceToTextModule!.InvokeMethod("transcribe", pyAudioData, _model);
+                        string transcription = result.ToString();
+
+                        if (string.IsNullOrEmpty(transcription))
+                        {
+                            throw new Exception("Transcription failed: result is empty.");
+                        }
+
+                        Debug.WriteLine("Transcription completed successfully.");
+                        return transcription;
+                    }
                 }
                 catch (Exception e)
                 {
-                    Debug.WriteLine($"Exception in TranscribeAsync: {e.Message}");
-                    Debug.WriteLine($"Stack Trace: {e.StackTrace}");
+                    Debug.WriteLine($"Error during transcription: {e.Message}");
                     throw new Exception($"Failed to transcribe audio: {e.Message}", e);
                 }
             });
         }
 
-        public Task DownloadModelAsync(string modelName)
+        public async Task<string> DownloadModelAsync(string modelName)
         {
-            return RunOnPythonThread(() =>
+            return await RunOnPythonThread(() =>
             {
                 try
                 {
-                    Debug.WriteLine($"Starting to download model: {modelName}");
-                    var result = _voice_to_text.download_model(modelName, _cacheDir, new Action<int>(progress =>
+                    Debug.WriteLine($"Downloading model: {modelName}...");
+
+                    var result = _voiceToTextModule?.InvokeMethod("download_model", new PyObject[] { new PyString(modelName), new PyString(_cacheDir)});
+
+                    if (result == null)
                     {
-                        Debug.WriteLine($"Download Progress: {progress}%");
-                    }));
-                    Debug.WriteLine("Model download completed successfully");
+                        throw new Exception("Download failed: result is null.");
+                    }
+
+                    Debug.WriteLine("Model download completed successfully.");
                     return "Model downloaded successfully";
-                }
-                catch (PythonException pe)
-                {
-                    Debug.WriteLine($"Python Exception in DownloadModelAsync: {pe.Message}");
-                    Debug.WriteLine($"Python Traceback: {pe.StackTrace}");
-                    throw new Exception($"Failed to download model: {pe.Message}", pe);
                 }
                 catch (Exception e)
                 {
-                    Debug.WriteLine($"Exception in DownloadModelAsync: {e.Message}");
-                    Debug.WriteLine($"Stack Trace: {e.StackTrace}");
+                    Debug.WriteLine($"Error downloading model '{modelName}': {e.Message}");
                     throw new Exception($"Failed to download model: {e.Message}", e);
                 }
             });
@@ -188,6 +205,15 @@ namespace Whispr.Services
         public bool IsModelLoaded()
         {
             return _isModelLoaded;
+        }
+
+        public void Dispose()
+        {
+            if (PythonEngine.IsInitialized)
+            {
+                PythonEngine.Shutdown();
+                Debug.WriteLine("Python engine shutdown successfully.");
+            }
         }
     }
 }
