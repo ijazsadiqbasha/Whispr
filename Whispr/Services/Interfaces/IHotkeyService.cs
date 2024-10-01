@@ -12,5 +12,6 @@ namespace Whispr.Services
         bool ChangeKey(int key);
 
         event EventHandler HotkeyTriggered;
+        bool SimulateTextInput(string text);
     }
 }

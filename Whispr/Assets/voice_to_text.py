@@ -17,7 +17,7 @@ def download_model(model_name, cache_dir):
         # Convert Hugging Face model to CTranslate2 format if it doesn't already exist
         if not os.path.exists(ct2_dir):
             converter = ctranslate2.converters.TransformersConverter(model_name)
-            converter.convert(ct2_dir, quantization="float32")
+            converter.convert(ct2_dir, quantization="int8")
 
             # Remove the models-- folder
             models_folder = os.path.join(cache_dir, f"models--{model_name.replace('/', '--')}")
@@ -39,7 +39,7 @@ def load_model(model_name, cache_dir):
         ct2_dir = os.path.join(cache_dir, f"{model_name.replace('/', '_')}_ct2")
 
         # Load the model using Faster-Whisper with float32
-        model = WhisperModel(ct2_dir, device="cpu", compute_type="float32")
+        model = WhisperModel(ct2_dir, device="cpu", compute_type="int8")
 
         return model
     except Exception as e:

@@ -7,7 +7,7 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Whispr.Services;
-using Whispr.Models;  // Add this line to import AppSettings
+using Whispr.Models;
 
 namespace Whispr.ViewModels
 {
@@ -16,6 +16,7 @@ namespace Whispr.ViewModels
         private readonly IAudioCaptureService _audioCaptureService;
         private readonly IWhisperModelService _whisperModelService;
         private readonly AppSettings _appSettings;
+        private readonly IHotkeyService _hotkeyService; 
         private bool _isVisible;
         private byte[] _audioData;
         private bool _isMicrophoneInitialized;
@@ -44,11 +45,12 @@ namespace Whispr.ViewModels
             set => this.RaiseAndSetIfChanged(ref _isModelLoaded, value);
         }
 
-        public MicrophoneOverlayViewModel(IAudioCaptureService audioCaptureService, IWhisperModelService whisperModelService, AppSettings appSettings)
+        public MicrophoneOverlayViewModel(IAudioCaptureService audioCaptureService, IWhisperModelService whisperModelService, AppSettings appSettings, IHotkeyService hotkeyService)
         {
             _audioCaptureService = audioCaptureService;
             _whisperModelService = whisperModelService;
             _appSettings = appSettings;
+            _hotkeyService = hotkeyService;
             _isVisible = false;
             _audioData = Array.Empty<byte>();
             _isMicrophoneInitialized = false;
@@ -109,8 +111,9 @@ namespace Whispr.ViewModels
                 try
                 {
                     string transcription = await _whisperModelService.TranscribeAsync(_audioData);
+                    
+                    _hotkeyService.SimulateTextInput(transcription);
                     Debug.WriteLine($"Transcription: {transcription}");
-                    // TODO: Handle the transcription result (e.g., display it in the UI)
                 }
                 catch (InvalidOperationException)
                 {
@@ -145,7 +148,6 @@ namespace Whispr.ViewModels
         public void ToggleVisibility()
         {
             IsVisible = !IsVisible;
-            Debug.WriteLine($"Visibility toggled: {IsVisible}");
         }
     }
 }

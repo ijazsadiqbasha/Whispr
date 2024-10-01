@@ -3,12 +3,15 @@ using SharpHook;
 using SharpHook.Native;
 using System;
 using Avalonia;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Whispr.Services
 {
     public class HotkeyService : IHotkeyService, IDisposable
     {
         private readonly AppSettings _appSettings;
+        private readonly EventSimulator _eventSimulator;
         private readonly TaskPoolGlobalHook _hook;
         private bool _ctrlPressed = false;
         private bool _shiftPressed = false;
@@ -18,6 +21,7 @@ namespace Whispr.Services
         public HotkeyService(AppSettings appSettings)
         {
             _appSettings = appSettings;
+            _eventSimulator = new EventSimulator();
             _hook = new TaskPoolGlobalHook();
             _hook.KeyPressed += OnKeyPressed;
             _hook.KeyReleased += OnKeyReleased;
@@ -69,6 +73,21 @@ namespace Whispr.Services
                 return true;
             }
             return false;
+        }
+
+        public bool SimulateTextInput(string text)
+        {
+            try
+            {
+                _eventSimulator.SimulateTextEntry(text);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error with pasting text: '{ex.Message}");
+                return false;
+            }
         }
 
         public void Dispose()
