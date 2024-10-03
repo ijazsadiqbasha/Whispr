@@ -28,8 +28,8 @@ Whispr is a lightweight, user-friendly speech-to-text application that leverages
 ## System Requirements
 
 - Windows 10 or later
-- 4GB RAM (8GB recommended for larger models)
-- 500MB free disk space (more for larger models)
+- 500MB RAM (3GB+ recommended for larger models)
+- 2GB free disk space
 
 ## Contributing
 
