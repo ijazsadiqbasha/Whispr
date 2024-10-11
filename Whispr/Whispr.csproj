@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Remove="Assets\whisper_api_runtime.exe" />
     <AvaloniaResource Remove="Assets\whisper_tiny\config.json" />
     <AvaloniaResource Remove="Assets\whisper_tiny\model.bin" />
     <AvaloniaResource Remove="Assets\whisper_tiny\vocabulary.json" />
@@ -22,9 +23,13 @@
   <ItemGroup>
     <None Remove="Assets\microphone.ico" />
     <None Remove="Assets\microphone.png" />
+    <None Remove="Assets\whisper_api_runtime.exe" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Assets\whisper_api_runtime.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Assets\whisper_tiny\config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
