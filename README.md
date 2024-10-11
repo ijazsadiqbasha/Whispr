@@ -4,7 +4,7 @@
   <img src="Whispr/Assets/microphone.png" alt="Whispr Logo" width="200" height="200">
 </p>
 
-Whispr is a lightweight, user-friendly speech-to-text application that leverages the power of AI to provide accurate transcriptions in real-time. Built with C# and Avalonia UI, Whispr offers a seamless cross-platform experience for Windows users.
+Whispr is a lightweight, user-friendly speech-to-text application that leverages the power of AI to provide accurate transcriptions in real-time. Built with C# and Avalonia UI, Whispr offers a seamless experience for Windows users.
 
 ## Features
 
