@@ -5,8 +5,6 @@ VisualStudioVersion = 17.10.35013.160
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Whispr", "Whispr\Whispr.csproj", "{54ABCE90-5EBB-41A1-92DB-125CF270F03E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Whispr.Tests", "Whispr.Tests\Whispr.Tests.csproj", "{1B93424A-6990-4084-AE4C-9C4D73C42062}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,14 +21,6 @@ Global
 		{54ABCE90-5EBB-41A1-92DB-125CF270F03E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{54ABCE90-5EBB-41A1-92DB-125CF270F03E}.Release|x86.ActiveCfg = Release|Any CPU
 		{54ABCE90-5EBB-41A1-92DB-125CF270F03E}.Release|x86.Build.0 = Release|Any CPU
-		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Debug|x86.Build.0 = Debug|Any CPU
-		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Release|x86.ActiveCfg = Release|Any CPU
-		{1B93424A-6990-4084-AE4C-9C4D73C42062}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

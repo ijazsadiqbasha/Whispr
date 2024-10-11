@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Diagnostics;
@@ -120,7 +119,7 @@ namespace Whispr
             {
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
-                    if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel && !string.IsNullOrEmpty(transcription))
+                    if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
                     {
                         viewModel.ProcessingCompleted -= OnProcessingCompleted;
                         viewModel.IsVisible = false;
