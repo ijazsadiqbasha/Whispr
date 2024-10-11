@@ -7,10 +7,7 @@ namespace Whispr.Models
 {
     public class AppSettings
     {
-        public string PythonPath { get; set; } = string.Empty;
-        public bool IsPythonInstalled { get; set; } = false;
         public int Hotkey { get; set; } = 32;
-        public string AIModel { get; set; } = "openai/whisper-tiny";
         public string RecordingMode { get; set; } = "Press and hold";
 
         private const string SettingsFileName = "localsettings.json";

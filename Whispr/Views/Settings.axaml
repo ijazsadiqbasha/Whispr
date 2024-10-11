@@ -4,18 +4,23 @@
         xmlns:local="clr-namespace:Whispr.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" Width="450" Height="525"
+        mc:Ignorable="d" Width="275" Height="250"
         x:Class="Whispr.Views.Settings"
         x:DataType="vm:SettingsViewModel"
         Icon="/Assets/microphone.ico"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
         Title="Settings">
-    <StackPanel Margin="20">
-        <TextBlock Text="Python Installation" FontWeight="Bold" Margin="0,0,0,10"/>
-        <local:PythonInstallationView DataContext="{Binding PythonInstallationViewModel}"/>
-        
-        <TextBlock Text="App Settings" FontWeight="Bold" Margin="0,20,0,10"/>
-        <local:AppSettingsView DataContext="{Binding AppSettingsViewModel}"/>
+    <StackPanel Margin="20" Spacing="10">
+		<TextBlock Text="Shortcut Key" Margin="0,0,0,5"/>
+		<StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+			<TextBlock Text="CTRL + SHIFT + " VerticalAlignment="Center"/>
+			<ComboBox ItemsSource="{Binding ShortcutKeys}" SelectedItem="{Binding SelectedShortcutKey}" Margin="5,0,0,0"/>
+		</StackPanel>
+
+		<TextBlock Text="Recording Mode" Margin="0,15,0,5"/>
+		<ComboBox ItemsSource="{Binding RecordingModes}"
+                  SelectedItem="{Binding SelectedRecordingMode}"
+                  HorizontalAlignment="Left"/>
     </StackPanel>
 </Window>

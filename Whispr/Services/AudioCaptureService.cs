@@ -8,7 +8,7 @@ namespace Whispr.Services
     public class AudioCaptureService : IAudioCaptureService
     {
         private WaveInEvent? _waveIn;
-        private byte[] _audioBuffer;
+        private readonly byte[] _audioBuffer;
         private int _bufferPosition;
         private bool _isCapturing;
         private readonly WaveFormat _waveFormat;
@@ -87,7 +87,7 @@ namespace Whispr.Services
             var resultSpan = result.AsSpan();
 
             // Write WAV header
-            WriteString(resultSpan.Slice(0, 4), "RIFF");
+            WriteString(resultSpan[..4], "RIFF");
             Write32BitLittleEndian(resultSpan.Slice(4, 4), totalSize - 8);
             WriteString(resultSpan.Slice(8, 4), "WAVE");
             WriteString(resultSpan.Slice(12, 4), "fmt ");
@@ -102,7 +102,7 @@ namespace Whispr.Services
             Write32BitLittleEndian(resultSpan.Slice(40, 4), audioData.Length);
 
             // Write audio data
-            audioData.CopyTo(resultSpan.Slice(headerSize));
+            audioData.CopyTo(resultSpan[headerSize..]);
 
             return result;
         }

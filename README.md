@@ -1,7 +1,7 @@
 # Whispr
 
 <p align="center">
-  <img src="Whispr/Assets/microphone.png" alt="Whispr Logo" width="100" height="100">
+  <img src="Whispr/Assets/microphone.png" alt="Whispr Logo" width="200" height="200">
 </p>
 
 Whispr is a lightweight, user-friendly speech-to-text application that leverages the power of AI to provide accurate transcriptions in real-time. Built with C# and Avalonia UI, Whispr offers a seamless cross-platform experience for Windows users.
@@ -9,7 +9,6 @@ Whispr is a lightweight, user-friendly speech-to-text application that leverages
 ## Features
 
 - **Real-time Transcription**: Convert speech to text on-the-fly using advanced AI models.
-- **Multiple AI Models**: Choose from a variety of Whisper models, including tiny, base, small, medium, and large versions.
 - **Customizable Hotkeys**: Set up your preferred hotkey combination for quick and easy access.
 - **Flexible Recording Modes**: Toggle between "Press and Hold" and "Toggle with Hotkey" recording modes.
 - **Visual Feedback**: Sleek microphone overlay with audio visualization and progress indicators.
@@ -18,7 +17,7 @@ Whispr is a lightweight, user-friendly speech-to-text application that leverages
 
 ## Getting Started
 
-1. Download the latest release from the [Releases](https://github.com/yourusername/Whispr/releases) page.
+1. Download the latest release from the [Releases](https://github.com/ijazsadiqbasha/Whispr/releases) page.
 2. Run the installer and follow the on-screen instructions.
 3. Launch Whispr from your Start menu or desktop shortcut.
 4. The app will start in the system tray. Right-click the tray icon to access settings.
@@ -28,8 +27,8 @@ Whispr is a lightweight, user-friendly speech-to-text application that leverages
 ## System Requirements
 
 - Windows 10 or later
-- 500MB RAM (3GB+ recommended for larger models)
-- 2GB free disk space
+- 200MB RAM
+- 500MB free disk space
 
 ## Contributing
 
@@ -44,7 +43,8 @@ Whispr is released under the MIT License. See the [LICENSE](LICENSE) file for de
 - [Avalonia UI](https://avaloniaui.net/) for the cross-platform UI framework
 - [OpenAI Whisper](https://github.com/openai/whisper) for the speech recognition models
 - [NAudio](https://github.com/naudio/NAudio) for audio capture and processing
-- [Python.NET](https://pythonnet.github.io/) for Python integration
+- [SharpHook](https://github.com/TolikPylypchuk/SharpHook) for global hotkey functionality
+- [TextCopy](https://github.com/CopyText/TextCopy) for clipboard operations
 
 ## Support
 

@@ -10,7 +10,6 @@ using Whispr.Models;
 using Whispr.Services;
 using Whispr.ViewModels;
 using Whispr.Views;
-using Python.Runtime;
 using Avalonia.Platform;
 using System.Threading.Tasks;
 
@@ -64,11 +63,7 @@ namespace Whispr
         {
             Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
-                if (_appSettings?.IsPythonInstalled == false)
-                {
-                    _settings?.Show();
-                }
-                else if (!_isRecording)
+                if (!_isRecording)
                 {
                     _isRecording = true;
                     if (_microphoneOverlay?.DataContext is MicrophoneOverlayViewModel viewModel)
@@ -145,23 +140,15 @@ namespace Whispr
         {
             var services = new ServiceCollection();
 
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
 
             _appSettings = AppSettings.LoadOrCreate();
 
-            services.AddSingleton<IConfiguration>(configuration);
             services.AddSingleton<IHotkeyService, HotkeyService>();
-            services.AddSingleton<IPythonInstallationService, PythonInstallationService>();
+            services.AddSingleton<IAudioCaptureService, AudioCaptureService>();
             services.AddSingleton<IWhisperModelService, WhisperModelService>();
             services.AddSingleton(_appSettings);
-            services.AddTransient<PythonInstallationViewModel>();
-            services.AddTransient<AppSettingsViewModel>();
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<MicrophoneOverlayViewModel>();
-            services.AddSingleton<IAudioCaptureService, AudioCaptureService>();
 
             return services.BuildServiceProvider();
         }
@@ -211,15 +198,6 @@ namespace Whispr
             GC.SuppressFinalize(this);
 
             _trayIcon?.Dispose();
-
-            try
-            {
-                PythonEngine.Shutdown();
-            }
-            catch (NotSupportedException ex)
-            {
-                Debug.WriteLine($"PythonEngine shutdown failed: {ex.Message}");
-            }
         }
 
         private void OnExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)

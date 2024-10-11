@@ -14,7 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AvaloniaResource Remove="Assets\voice_to_text.py" />
+    <AvaloniaResource Remove="Assets\whisper_tiny\config.json" />
+    <AvaloniaResource Remove="Assets\whisper_tiny\model.bin" />
+    <AvaloniaResource Remove="Assets\whisper_tiny\vocabulary.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,7 +25,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\voice_to_text.py">
+    <Content Include="Assets\whisper_tiny\config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\whisper_tiny\model.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\whisper_tiny\vocabulary.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -36,7 +44,6 @@
     <PackageReference Include="Avalonia.Diagnostics" Version="11.1.0" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.0" />
     <PackageReference Include="NAudio" Version="2.2.1" />
-    <PackageReference Include="pythonnet" Version="3.0.4" />
     <PackageReference Include="ReactiveUI" Version="19.5.1" />
     <PackageReference Include="ReactiveUI.Fody" Version="19.5.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
@@ -63,9 +70,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="app.manifest">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

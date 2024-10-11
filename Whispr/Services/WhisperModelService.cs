@@ -1,201 +1,185 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
+using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
-using Python.Runtime;
-using Whispr.Models;
+using System.Text.Json;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Whispr.Services
 {
-    public class WhisperModelService(AppSettings settings) : IWhisperModelService, IDisposable
+    public class WhisperModelService : IWhisperModelService, IDisposable
     {
-        private readonly AppSettings _settings = settings;
-        private PyModule? _voiceToTextModule;
-        private dynamic? _loadedModel;
+        private readonly string _whisperRuntimePath;
         private bool _isModelLoaded = false;
-        private string _loadedModelName = string.Empty;
-        private readonly string? _cacheDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "whisper_models");
-        private readonly SynchronizationContext _pythonContext = SynchronizationContext.Current ?? new SynchronizationContext();
+        private Process? _serverProcess;
+        private TcpClient? _tcpClient;
+        private NetworkStream? _stream;
+        private bool _disposed = false;
+        private const int Port = 5000;
+        private const int MaxRetries = 30;
+        private const int RetryDelay = 1000;
 
-        private Task<T> RunOnPythonThread<T>(Func<T> action)
+        public WhisperModelService()
         {
-            var tcs = new TaskCompletionSource<T>();
-
-            _pythonContext.Post(_ =>
-            {
-                try
-                {
-                    using (Py.GIL())
-                    {
-                        var result = action();
-                        tcs.SetResult(result);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Python execution error: {ex.Message}");
-                    tcs.SetException(ex);
-                }
-            }, null);
-
-            return tcs.Task;
+            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string assetsDirectory = Path.Combine(baseDirectory, "Assets");
+            _whisperRuntimePath = Path.Combine(assetsDirectory, "whisper_api_runtime.exe");
         }
 
-        public void StartPythonRuntime()
+        public async Task<bool> LoadModelAsync()
+        {
+            if (_isModelLoaded) return true;
+
+            try
+            {
+                _serverProcess = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = _whisperRuntimePath,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    }
+                };
+
+                _serverProcess.OutputDataReceived += (sender, e) => Debug.WriteLine($"Server output: {e.Data}");
+                _serverProcess.ErrorDataReceived += (sender, e) => Debug.WriteLine($"Server error: {e.Data}");
+
+                _serverProcess.Start();
+                _serverProcess.BeginOutputReadLine();
+                _serverProcess.BeginErrorReadLine();
+
+                for (int attempt = 0; attempt < MaxRetries; attempt++)
+                {
+                    await Task.Delay(RetryDelay);
+                    if (await TryConnectAndCheckModelAsync())
+                    {
+                        _isModelLoaded = true;
+                        return true;
+                    }
+                }
+
+                Debug.WriteLine("Failed to connect and load the model after multiple attempts.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error loading model: {ex.Message}");
+                return false;
+            }
+        }
+
+        private async Task<bool> TryConnectAndCheckModelAsync()
         {
             try
             {
-                if (PythonEngine.IsInitialized)
+                _tcpClient = new TcpClient();
+                await _tcpClient.ConnectAsync("localhost", Port);
+                _stream = _tcpClient.GetStream();
+
+                return await CheckModelReadyAsync();
+            }
+            catch (SocketException)
+            {
+                _tcpClient?.Close();
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error connecting to server: {ex.Message}");
+                _tcpClient?.Close();
+                return false;
+            }
+        }
+
+        private async Task<bool> CheckModelReadyAsync()
+        {
+            try
+            {
+                var request = new { action = "check_ready" };
+                var requestJson = JsonSerializer.Serialize(request);
+                byte[] requestBytes = Encoding.UTF8.GetBytes(requestJson + "\n");
+                await _stream!.WriteAsync(requestBytes);
+
+                using var reader = new StreamReader(_stream, Encoding.UTF8, false, 1024, true);
+                var response = await reader.ReadLineAsync();
+                if (response != null)
                 {
-                    Debug.WriteLine("Python engine is already initialized.");
-                    return;
-                }
-
-                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                string pythonHome = Path.Combine(baseDirectory, "python");
-                string pythonDll = Path.Combine(pythonHome, "python311.dll");
-
-                if (!File.Exists(pythonDll))
-                    throw new FileNotFoundException($"Python DLL not found at {pythonDll}");
-
-                Runtime.PythonDLL = pythonDll;
-                PythonEngine.PythonHome = pythonHome;
-                PythonEngine.Initialize();
-
-                Debug.WriteLine("Python runtime initialized successfully.");
-
-                using (Py.GIL())
-                {
-                    string scriptPath = Path.Combine(baseDirectory, "Assets").Replace("\\", "/");
-                    string pythonCode = $"import sys; sys.path.append('{scriptPath}'); import voice_to_text";
-                    PythonEngine.Exec(pythonCode);
-                    _voiceToTextModule = (PyModule)Py.Import("voice_to_text");
-
-                    Debug.WriteLine("Voice to text module imported successfully.");
+                    var responseObj = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(response);
+                    if (responseObj!.TryGetValue("ready", out var readyProp) && readyProp.ValueKind == JsonValueKind.True)
+                    {
+                        return true;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Python initialization failed: {ex.Message}");
-                throw new Exception("Failed to initialize Python environment", ex);
+                Debug.WriteLine($"Error checking model readiness: {ex.Message}");
             }
-        }
-
-        public async Task<bool> LoadModelAsync(string modelName)
-        {
-            if (_isModelLoaded && _loadedModelName == modelName)
-            {
-                Debug.WriteLine("Model is already loaded.");
-                return true;
-            }
-
-            return await RunOnPythonThread(() =>
-            {
-                try
-                {
-                    using (Py.GIL())
-                    {
-                        if (_loadedModelName != modelName)
-                        {
-                            _isModelLoaded = false;
-
-                            if (_loadedModel != null)
-                            {
-                                dynamic gc = Py.Import("gc");
-                                gc.collect();
-                            }
-
-                            _loadedModel = _voiceToTextModule?.InvokeMethod("load_model", new PyObject[] { new PyString(modelName), new PyString(_cacheDir!) });
-
-                            if (_loadedModel == null)
-                            {
-                                Debug.WriteLine($"Failed to load the model: {modelName}");
-                                return false;
-                            }
-
-                            Debug.WriteLine($"Model '{modelName}' loaded successfully.");
-                            _isModelLoaded = true;
-                            _loadedModelName = modelName;
-                        }
-
-                        return true;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine($"Error loading model '{modelName}': {e.Message}");
-                    _isModelLoaded = false;
-                    return false;
-                }
-            });
+            return false;
         }
 
         public async Task<string> TranscribeAsync(byte[] audioData, Action<int> progressCallback)
         {
-            if (!_isModelLoaded || _loadedModel == null)
+            if (!_isModelLoaded || _stream == null)
             {
-                throw new InvalidOperationException("Model is not loaded. Please load the model before transcribing.");
+                Debug.WriteLine("Model is not loaded. Attempting to load...");
+                if (!await LoadModelAsync())
+                {
+                    return "Error: Unable to load the transcription model.";
+                }
             }
 
-            return await RunOnPythonThread(() =>
+            try
             {
-                try
+                var request = new { action = "transcribe", audio = Convert.ToBase64String(audioData) };
+                var requestJson = JsonSerializer.Serialize(request);
+                byte[] requestBytes = Encoding.UTF8.GetBytes(requestJson + "\n");
+                await _stream!.WriteAsync(requestBytes);
+
+                using var reader = new StreamReader(_stream, Encoding.UTF8, false, 1024, true);
+                while (true)
                 {
-                    using (Py.GIL())
+                    var response = await reader.ReadLineAsync();
+                    if (response == null) break;
+
+                    try
                     {
-                        Debug.WriteLine("Starting transcription...");
-
-                        Action<double> pyProgressHandler = (progress) =>
+                        var responseObj = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(response);
+                        if (responseObj!.TryGetValue("progress", out var progressProp) && progressProp.ValueKind == JsonValueKind.Number)
                         {
-                            int progress360 = (int)(progress * 360);
-                            progressCallback?.Invoke(progress360);
-                        };
-
-                        using PyObject pyAudioData = audioData.ToPython();
-                        using PyObject pyProgressHandlerFunc = pyProgressHandler.ToPython();
-
-                        dynamic result = _voiceToTextModule!.InvokeMethod("transcribe", pyAudioData, _loadedModel, pyProgressHandlerFunc);
-                        string transcription = result.ToString();
-
-                        if (string.IsNullOrEmpty(transcription))
-                        {
-                            throw new Exception("Transcription failed: result is empty.");
+                            double progressValue = progressProp.GetDouble();
+                            int progressPercentage = (int)(progressValue * 100);
+                            progressCallback(Math.Min(progressPercentage, 100));
                         }
-
-                        Debug.WriteLine("Transcription completed successfully.");
-                        return transcription;
+                        else if (responseObj.TryGetValue("result", out var resultProp) && resultProp.ValueKind == JsonValueKind.String)
+                        {
+                            progressCallback(100);
+                            return resultProp.GetString() ?? string.Empty;
+                        }
+                        else if (responseObj.TryGetValue("error", out var errorProp) && errorProp.ValueKind == JsonValueKind.String)
+                        {
+                            return $"Error from transcription service: {errorProp.GetString()}";
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine($"Error during transcription: {e.Message}");
-                    throw new Exception($"Failed to transcribe audio: {e.Message}", e);
-                }
-            });
-        }
-
-        public async Task<string> DownloadModelAsync(string modelName)
-        {
-            return await RunOnPythonThread(() =>
-            {
-                try
-                {
-                    using (Py.GIL())
+                    catch (JsonException jsonEx)
                     {
-                        Debug.WriteLine($"Downloading model: {modelName}...");
-
-                        var result = (_voiceToTextModule?.InvokeMethod("download_model", new PyObject[] { new PyString(modelName), new PyString(_cacheDir!) })) ?? throw new Exception("Download failed: result is null.");
-                        Debug.WriteLine("Model download completed successfully.");
-                        return "Model downloaded successfully";
+                        Debug.WriteLine($"JSON parsing error: {jsonEx.Message}. Response: {response}");
                     }
                 }
-                catch (Exception e)
-                {
-                    Debug.WriteLine($"Error downloading model '{modelName}': {e.Message}");
-                    throw new Exception($"Failed to download model: {e.Message}", e);
-                }
-            });
+
+                return "Error: Unexpected end of communication";
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error during transcription: {ex.Message}");
+                return $"Error during transcription: {ex.Message}";
+            }
         }
 
         public bool IsModelLoaded()
@@ -203,9 +187,64 @@ namespace Whispr.Services
             return _isModelLoaded;
         }
 
+        private void StopServer()
+        {
+            if (_stream != null && _tcpClient != null)
+            {
+                try
+                {
+                    var request = new { action = "shutdown" };
+                    var requestJson = JsonSerializer.Serialize(request);
+                    byte[] requestBytes = Encoding.UTF8.GetBytes(requestJson + "\n");
+                    _stream.Write(requestBytes, 0, requestBytes.Length);
+                    _stream.Flush();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error shutting down server gracefully: {ex.Message}");
+                }
+
+                _stream.Close();
+                _tcpClient.Close();
+            }
+
+            if (_serverProcess != null && !_serverProcess.HasExited)
+            {
+                _serverProcess.WaitForExit(5000);
+                if (!_serverProcess.HasExited)
+                {
+                    _serverProcess.Kill();
+                }
+                _serverProcess.Dispose();
+                _serverProcess = null;
+            }
+
+            System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners()
+                .Where(x => x.Port == Port)
+                .ToList()
+                .ForEach(x => { try { new TcpClient(x.Address.ToString(), x.Port).Close(); } catch { } });
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    StopServer();
+                }
+                _disposed = true;
+            }
+        }
+
+        ~WhisperModelService()
+        {
+            Dispose(false);
+        }
+
         public void Dispose()
         {
-            PythonEngine.Shutdown();
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
     }
